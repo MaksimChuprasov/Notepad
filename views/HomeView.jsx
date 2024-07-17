@@ -1,25 +1,38 @@
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Note from '../components/Note.jsx'
+import DeleteModal from '../components/DeleteModal.jsx'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const HomeView = ({ navigation }) => {
-
     const [notes, setNotes] = useState([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedNote, setSelectedNote] = useState(null);
 
     const addNote = (note) => {
-        const newNote = { id: Date.now().toString(), text: note };
-        const updatedNotes = [...notes, newNote];
+        const newNote = { id: Date.now().toString(), text: note.text, files: note.files };
+        setNotes((prevNotes) => {
+            const updatedNotes = [...prevNotes, newNote];
+            saveNotes(updatedNotes);
+            return updatedNotes;
+        });
+    };
+
+    const updateNote = (updatedNotes) => {
         setNotes(updatedNotes);
         saveNotes(updatedNotes);
-    }
+    };
 
     useEffect(() => {
-        loadnotes();
-    }, [])
+        loadNotes();
+    }, []);
 
-    const loadnotes = async () => {
+    useEffect(() => {
+        saveNotes(notes);
+    }, [notes]);
+
+    const loadNotes = async () => {
         try {
             const savedNotes = await AsyncStorage.getItem('notes');
             if (savedNotes !== null) {
@@ -28,39 +41,85 @@ const HomeView = ({ navigation }) => {
                 setNotes(validNotes);
             }
         } catch (error) {
-            console.error('Failed to load notes.', error);
+            console.error('', error);
         }
-    }
-
+    };
 
     const saveNotes = async (newNotes) => {
         try {
             await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
         } catch (error) {
-            console.error('Failed to save notes.', error);
+            
         }
     };
-    const numColumns = notes.length > 1 ? 2 : 1;
+
+    const handleLongPress = (note) => {
+        setSelectedNote(note);
+        setModalVisible(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalVisible(false);
+        setSelectedNote(null);
+    };
+
+    const handleDeleteModal = () => {
+        if (selectedNote) {
+            setNotes((prevNotes) => {
+                const updatedNotes = prevNotes.filter(note => note.id !== selectedNote.id);
+                saveNotes(updatedNotes);
+                return updatedNotes;
+            });
+        }
+        setModalVisible(false);
+    };
 
     return (
         <SafeAreaView>
-            <View className="bg-white h-full px-2 w-screen items-center">
-                <FlatList
-                    key={`flatlist-${numColumns}`}
-                    numColumns={numColumns}
-                    data={notes}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <Note note={item} />}
-                />
-                <TouchableOpacity className="rounded-2xl w-20 h-20 justify-center bg-black items-center absolute bottom-2 right-2" title='Add Note' onPress={() => navigation.navigate('Note', { addNote })} >
+            <View>
+                <View className="bg-white h-full px-2 w-screen ${notes.length > 1 ? 'items-center' : ''}">
+                    <FlatList
+                        numColumns={2}
+                        data={notes}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <Pressable
+                                onLongPress={() => handleLongPress(item)}
+                                onPress={() => navigation.navigate('Note', { noteToEdit: item, updateNote })}
+                            >
+                                <View>
+                                    <Note note={item} />
+                                    {item.files && item.files.map((file, index) => (
+                                        <View key={index} className="p-2">
+                                            <Text>{file.name}</Text>
+                                            <Text>{file.type}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </Pressable>
+                        )}
+                    />
+                </View>
+                <TouchableOpacity
+                    title='Add Note'
+                    onPress={() => navigation.navigate('Note', { addNote })}
+                >
                     <Image
-                        source={require('../images/document-svgrepo-com.png')}
-                        className="w-16 h-16"
+                        source={require('../images/plus.png')}
+                        className="w-14 h-14 absolute bottom-3 right-3"
                     />
                 </TouchableOpacity>
+                <View>
+                    <DeleteModal
+                        visible={modalVisible}
+                        onClose={handleCloseModal}
+                        onDelete={handleDeleteModal}
+                    />
+                </View>
             </View>
         </SafeAreaView>
-    )
-}
+    );
+};
+
 
 export default HomeView;
