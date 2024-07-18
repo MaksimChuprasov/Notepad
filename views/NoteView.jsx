@@ -2,13 +2,14 @@ import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { Linking } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 const NoteView = ({ navigation, route }) => {
     const { addNote, updateNote, noteToEdit } = route.params || {};
     const [text, setText] = useState(noteToEdit ? noteToEdit.text : '');
     const [files, setFiles] = useState(noteToEdit ? noteToEdit.files : []);
+    const [editingFileIndex, setEditingFileIndex] = useState(-1);
+    const [editedFileContent, setEditedFileContent] = useState('');
 
     useEffect(() => {
         if (noteToEdit) {
@@ -35,17 +36,41 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-    const openFile = async (fileUri) => {
+    const saveEditedFile = async () => {
+        if (editingFileIndex !== -1) {
+            try {
+                const originalFileUri = files[editingFileIndex].uri;
+                const newFileUri = getNewFileUri(originalFileUri);
+
+                await FileSystem.copyAsync({ from: originalFileUri, to: newFileUri });
+
+                const updatedFiles = [...files];
+                updatedFiles[editingFileIndex].uri = newFileUri;
+                setFiles(updatedFiles);
+
+                await FileSystem.writeAsStringAsync(newFileUri, editedFileContent);
+
+                setEditingFileIndex(-1);
+                setEditedFileContent('');
+            } catch (err) {
+                console.error('Error saving file:', err);
+                Alert.alert('Error', 'Unable to save file.');
+            }
+        }
+    };
+
+    const openFile = async (fileUri, index) => {
         try {
-            const contentUri = await FileSystem.getContentUriAsync(fileUri);
-            await WebBrowser.openBrowserAsync(contentUri);
+            const fileContent = await FileSystem.readAsStringAsync(fileUri);
+            setEditingFileIndex(index);
+            setEditedFileContent(fileContent);
         } catch (err) {
             console.error('Error opening file:', err);
             Alert.alert('Error', 'Unable to open file.');
         }
     };
 
-    const saveNote = () => {
+    const saveNote = async () => {
         if (noteToEdit) {
             noteToEdit.text = text;
             noteToEdit.files = files;
@@ -60,7 +85,27 @@ const NoteView = ({ navigation, route }) => {
                 files,
             });
         }
+
+        try {
+            const promises = files.map(async (file) => {
+                const fileUri = file.uri;
+                const fileContent = await FileSystem.readAsStringAsync(fileUri);
+                await FileSystem.writeAsStringAsync(fileUri, fileContent);
+            });
+
+            await Promise.all(promises);
+        } catch (error) {
+            console.error('Error saving files:', error);
+        }
+
         navigation.goBack();
+    };
+    const getNewFileUri = (originalUri) => {
+        const lastIndex = originalUri.lastIndexOf('/');
+        const directory = originalUri.substring(0, lastIndex + 1);
+        const fileName = originalUri.substring(lastIndex + 1);
+        const newFileUri = `${directory}new_${fileName}`;
+        return newFileUri;
     };
 
     return (
@@ -70,32 +115,47 @@ const NoteView = ({ navigation, route }) => {
                 placeholder='Enter your note...'
                 onChangeText={(text) => setText(text)}
                 value={text}
+                multiline={true}
             />
-            <TouchableOpacity
-                className="p-2 mt-2 mx-2 bg-gray-200"
-                onPress={selectFiles}
-            >
-                <Text>Select Files</Text>
-            </TouchableOpacity>
-
-            {files.length > 0 ? (
-                <View>
-                    {files.map((file, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            className="p-2"
-                            onPress={() => openFile(file.uri)}
+            <View className="px-3">
+                {files.map((file, index) => (
+                    <View key={index}>
+                        <TouchableOpacity className="w-1/2 mb-1"
+                            onPress={() => openFile(file.uri, index)}
                         >
-                            <Text>{file.name}</Text>
+                            <Text className="text-blue-600">{file.name}</Text>
                         </TouchableOpacity>
-                    ))}
-                </View>
-            ) : (
-                <Text className="p-2">No files selected</Text>
+                        {editingFileIndex === index && (
+                            <TextInput className=""
+                                onChangeText={(content) => setEditedFileContent(content)}
+                                placeholder='Change your file...'
+                                value={editedFileContent}
+                                multiline={true}
+                            />
+                        )}
+                    </View>
+                ))}
+            </View>
+            {editingFileIndex !== -1 && (
+                <TouchableOpacity
+                    className="items-center bg-gray-300 p-2 mx-1 rounded-xl mt-1"
+                    onPress={saveEditedFile}
+                >
+                    <Text>Save File</Text>
+                </TouchableOpacity>
+            )}
+            {editingFileIndex === -1 && (
+                <TouchableOpacity
+                    className="items-center bg-gray-300 p-2 mx-1 rounded-xl mt-1"
+                    onPress={selectFiles}
+                >
+                    <Text>Add Files</Text>
+                </TouchableOpacity>
             )}
 
+
             <TouchableOpacity
-                className="rounded-2xl w-20 h-20 justify-center items-center mt-2 ml-auto mr-1"
+                className="rounded-2xl w-20 h-20 justify-center items-center ml-auto mr-1"
                 title='Save Note'
                 onPress={saveNote}
             >

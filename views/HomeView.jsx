@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import Note from '../components/Note.jsx'
 import DeleteModal from '../components/DeleteModal.jsx'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 
 
 const HomeView = ({ navigation }) => {
@@ -13,7 +14,7 @@ const HomeView = ({ navigation }) => {
     const addNote = (note) => {
         const newNote = { id: Date.now().toString(), text: note.text, files: note.files };
         setNotes((prevNotes) => {
-            const updatedNotes = [...prevNotes, newNote];
+            const updatedNotes = [newNote, ...prevNotes];
             saveNotes(updatedNotes);
             return updatedNotes;
         });
@@ -49,11 +50,12 @@ const HomeView = ({ navigation }) => {
         try {
             await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
         } catch (error) {
-            
+
         }
     };
 
     const handleLongPress = (note) => {
+        Haptics.selectionAsync();
         setSelectedNote(note);
         setModalVisible(true);
     };
@@ -82,19 +84,16 @@ const HomeView = ({ navigation }) => {
                         numColumns={2}
                         data={notes}
                         keyExtractor={(item) => item.id}
+                        columnWrapperStyle={{
+                            flex: 1
+                        }}
                         renderItem={({ item }) => (
-                            <Pressable
+                            <Pressable className="mb-3"
                                 onLongPress={() => handleLongPress(item)}
-                                onPress={() => navigation.navigate('Note', { noteToEdit: item, updateNote })}
+                                onPress={() => navigation.navigate('Note', { addNote, updateNote, noteToEdit: item })}
                             >
-                                <View>
-                                    <Note note={item} />
-                                    {item.files && item.files.map((file, index) => (
-                                        <View key={index} className="p-2">
-                                            <Text>{file.name}</Text>
-                                            <Text>{file.type}</Text>
-                                        </View>
-                                    ))}
+                                <View className="flex-1">
+                                    <Note note={item}></Note>
                                 </View>
                             </Pressable>
                         )}
@@ -102,7 +101,7 @@ const HomeView = ({ navigation }) => {
                 </View>
                 <TouchableOpacity
                     title='Add Note'
-                    onPress={() => navigation.navigate('Note', { addNote })}
+                    onPress={() => navigation.navigate('Note', { addNote, updateNote })}
                 >
                     <Image
                         source={require('../images/plus.png')}
