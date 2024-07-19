@@ -100,13 +100,6 @@ const NoteView = ({ navigation, route }) => {
 
         navigation.goBack();
     };
-    const getNewFileUri = (originalUri) => {
-        const lastIndex = originalUri.lastIndexOf('/');
-        const directory = originalUri.substring(0, lastIndex + 1);
-        const fileName = originalUri.substring(lastIndex + 1);
-        const newFileUri = `${directory}new_${fileName}`;
-        return newFileUri;
-    };
 
     return (
         <View className="bg-white h-full">
