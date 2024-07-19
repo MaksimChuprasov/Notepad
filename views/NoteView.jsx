@@ -1,8 +1,7 @@
-import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, Image, Alert } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import * as WebBrowser from 'expo-web-browser';
 
 const NoteView = ({ navigation, route }) => {
     const { addNote, updateNote, noteToEdit } = route.params || {};
@@ -36,20 +35,49 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
+    const getNewFileUri = (originalUri) => {
+        const timestamp = new Date().getTime();
+        const lastIndex = originalUri.lastIndexOf('/');
+        const directory = originalUri.substring(0, lastIndex + 1);
+        const fileName = originalUri.substring(lastIndex + 1);
+        
+        const newFileUri = `${directory}copy_${timestamp}_${fileName}`;
+        return newFileUri;
+    };
+
+    const saveFileToDownloads = async (fileUri, fileName) => {
+        try {
+            const downloadsDirectory = `${FileSystem.documentDirectory}Documents/`;
+            await FileSystem.makeDirectoryAsync(downloadsDirectory, { intermediates: true });
+    
+            const newFileUri = `${downloadsDirectory}${fileName}`;
+    
+            await FileSystem.copyAsync({
+                from: fileUri,
+                to: newFileUri,
+            });
+        } catch (error) {
+            console.error('Error saving file to Downloads:', error);
+        }
+    };
+
     const saveEditedFile = async () => {
         if (editingFileIndex !== -1) {
             try {
                 const originalFileUri = files[editingFileIndex].uri;
                 const newFileUri = getNewFileUri(originalFileUri);
-
+    
                 await FileSystem.copyAsync({ from: originalFileUri, to: newFileUri });
-
+    
                 const updatedFiles = [...files];
                 updatedFiles[editingFileIndex].uri = newFileUri;
                 setFiles(updatedFiles);
-
+    
                 await FileSystem.writeAsStringAsync(newFileUri, editedFileContent);
-
+    
+                const fileName = `edited_${new Date().getTime()}.txt`;
+                await saveFileToDownloads(newFileUri, fileName);
+    
                 setEditingFileIndex(-1);
                 setEditedFileContent('');
             } catch (err) {
@@ -61,7 +89,9 @@ const NoteView = ({ navigation, route }) => {
 
     const openFile = async (fileUri, index) => {
         try {
-            const fileContent = await FileSystem.readAsStringAsync(fileUri);
+            const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
             setEditingFileIndex(index);
             setEditedFileContent(fileContent);
         } catch (err) {
