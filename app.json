@@ -2,7 +2,7 @@
   "expo": {
     "name": "Notepad",
     "slug": "Notepad",
-    "scheme": "aora",
+    "scheme": "Notepad",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
