@@ -40,7 +40,7 @@ const NoteView = ({ navigation, route }) => {
         const lastIndex = originalUri.lastIndexOf('/');
         const directory = originalUri.substring(0, lastIndex + 1);
         const fileName = originalUri.substring(lastIndex + 1);
-        
+
         const newFileUri = `${directory}copy_${timestamp}_${fileName}`;
         return newFileUri;
     };
@@ -49,9 +49,9 @@ const NoteView = ({ navigation, route }) => {
         try {
             const downloadsDirectory = `${FileSystem.documentDirectory}Documents/`;
             await FileSystem.makeDirectoryAsync(downloadsDirectory, { intermediates: true });
-    
+
             const newFileUri = `${downloadsDirectory}${fileName}`;
-    
+
             await FileSystem.copyAsync({
                 from: fileUri,
                 to: newFileUri,
@@ -61,25 +61,49 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
+    const copyFileToPermanentLocation = async (uri) => {
+        try {
+            const fileName = uri.split('/').pop();
+            const permanentFileUri = `${FileSystem.documentDirectory}Documents/${fileName}`;
+
+            // Копируем файл в постоянное место
+            await FileSystem.copyAsync({
+                from: uri,
+                to: permanentFileUri,
+            });
+
+            return permanentFileUri;
+        } catch (error) {
+            console.error('Error copying file:', error);
+            throw error;
+        }
+    };
+
     const saveEditedFile = async () => {
         if (editingFileIndex !== -1) {
             try {
                 const originalFileUri = files[editingFileIndex].uri;
-                const newFileUri = getNewFileUri(originalFileUri);
     
-                await FileSystem.copyAsync({ from: originalFileUri, to: newFileUri });
+                // Проверяем, находится ли файл в временной директории
+                const permanentFileUri = originalFileUri.startsWith('file:///data/user/0/host.exp.exponent/cache')
+                    ? await copyFileToPermanentLocation(originalFileUri)
+                    : originalFileUri;
+
+                    console.log(permanentFileUri)
     
+                // Перезаписываем файл с новыми данными
+                await FileSystem.writeAsStringAsync(permanentFileUri, editedFileContent);
+    
+                // Обновляем список файлов с новым URI
                 const updatedFiles = [...files];
-                updatedFiles[editingFileIndex].uri = newFileUri;
+                updatedFiles[editingFileIndex] = { ...updatedFiles[editingFileIndex], uri: permanentFileUri };
                 setFiles(updatedFiles);
     
-                await FileSystem.writeAsStringAsync(newFileUri, editedFileContent);
-    
-                const fileName = `edited_${new Date().getTime()}.txt`;
-                await saveFileToDownloads(newFileUri, fileName);
-    
+                // Сбрасываем индекс и содержимое редактируемого файла
                 setEditingFileIndex(-1);
                 setEditedFileContent('');
+    
+                Alert.alert('Success', 'File has been saved.');
             } catch (err) {
                 console.error('Error saving file:', err);
                 Alert.alert('Error', 'Unable to save file.');
@@ -92,6 +116,7 @@ const NoteView = ({ navigation, route }) => {
             const fileContent = await FileSystem.readAsStringAsync(fileUri, {
                 encoding: FileSystem.EncodingType.UTF8,
             });
+            console.log('File Content:', fileContent); // Проверьте содержимое файла
             setEditingFileIndex(index);
             setEditedFileContent(fileContent);
         } catch (err) {
@@ -117,13 +142,7 @@ const NoteView = ({ navigation, route }) => {
         }
 
         try {
-            const promises = files.map(async (file) => {
-                const fileUri = file.uri;
-                const fileContent = await FileSystem.readAsStringAsync(fileUri);
-                await FileSystem.writeAsStringAsync(fileUri, fileContent);
-            });
-
-            await Promise.all(promises);
+            // Здесь уже не нужно перезаписывать файлы, так как это делается в saveEditedFile
         } catch (error) {
             console.error('Error saving files:', error);
         }
@@ -149,7 +168,7 @@ const NoteView = ({ navigation, route }) => {
                             <Text className="text-blue-600">{file.name}</Text>
                         </TouchableOpacity>
                         {editingFileIndex === index && (
-                            <TextInput className=""
+                            <TextInput className="border p-2 rounded-lg"
                                 onChangeText={(content) => setEditedFileContent(content)}
                                 placeholder='Change your file...'
                                 value={editedFileContent}
@@ -159,34 +178,40 @@ const NoteView = ({ navigation, route }) => {
                     </View>
                 ))}
             </View>
-            {editingFileIndex !== -1 && (
+            <View className="flex-1 flex-row">
+                {editingFileIndex !== -1 && (
+                    <TouchableOpacity
+                        className="flex items-center p-2 mx-1 mt-1 rounded-xl h-12"
+                        onPress={saveEditedFile}
+                    >
+                        <Image
+                            source={require('../images/save-file.png')}
+                            className="w-8 h-8"
+                        />
+                    </TouchableOpacity>
+                )}
+                {editingFileIndex === -1 && (
+                    <TouchableOpacity
+                        className="flex items-center p-2 mx-1 mt-1 rounded-xl h-12"
+                        onPress={selectFiles}
+                    >
+                        <Image
+                            source={require('../images/add-file.png')}
+                            className="w-8 h-8"
+                        />
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                    className="items-center bg-gray-300 p-2 mx-1 rounded-xl mt-1"
-                    onPress={saveEditedFile}
+                    className="flex rounded-2xl w-20 h-20 justify-center items-center ml-auto mr-1"
+                    title='Save Note'
+                    onPress={saveNote}
                 >
-                    <Text>Save File</Text>
+                    <Image
+                        source={require('../images/save-note.png')}
+                        className="w-10 h-10"
+                    />
                 </TouchableOpacity>
-            )}
-            {editingFileIndex === -1 && (
-                <TouchableOpacity
-                    className="items-center bg-gray-300 p-2 mx-1 rounded-xl mt-1"
-                    onPress={selectFiles}
-                >
-                    <Text>Add Files</Text>
-                </TouchableOpacity>
-            )}
-
-
-            <TouchableOpacity
-                className="rounded-2xl w-20 h-20 justify-center items-center ml-auto mr-1"
-                title='Save Note'
-                onPress={saveNote}
-            >
-                <Image
-                    source={require('../images/align-right-svgrepo-com.png')}
-                    className="w-12 h-12"
-                />
-            </TouchableOpacity>
+            </View>
         </View>
     );
 };

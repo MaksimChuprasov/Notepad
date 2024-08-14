@@ -2,8 +2,8 @@
   "expo": {
     "name": "Notepad",
     "slug": "Notepad",
-    "scheme": "Notepad",
     "version": "1.0.0",
+    "scheme": "Notepad",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",

@@ -1,15 +1,19 @@
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable, Modal } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Note from '../components/Note.jsx'
 import DeleteModal from '../components/DeleteModal.jsx'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 
-
 const HomeView = ({ navigation }) => {
     const [notes, setNotes] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedNote, setSelectedNote] = useState(null);
+    const [addModalVisible, setAddModalVisible] = useState(false);
+
+    const toggleAddModal = () => {
+        setAddModalVisible(!addModalVisible);
+    };
 
     const addNote = (note) => {
         const newNote = { id: Date.now().toString(), text: note.text, files: note.files };
@@ -99,15 +103,55 @@ const HomeView = ({ navigation }) => {
                         )}
                     />
                 </View>
-                <TouchableOpacity
-                    title='Add Note'
-                    onPress={() => navigation.navigate('Note', { addNote, updateNote })}
-                >
-                    <Image
-                        source={require('../images/plus.png')}
-                        className="w-14 h-14 absolute bottom-3 right-3"
-                    />
-                </TouchableOpacity>
+                <View className="flex-1 justify-end">
+                    <TouchableOpacity
+                        title='Add Note'
+                        onPress={toggleAddModal}
+                    >
+                        <Image
+                            source={require('../images/plus.png')}
+                            className="w-20 h-20 absolute bottom-3 right-3"
+                        />
+                    </TouchableOpacity>
+                    <Modal
+                        transparent={true}
+                        visible={addModalVisible}
+                        animationType="none"
+                        onRequestClose={toggleAddModal}
+                    >
+                        <TouchableOpacity
+                            className="flex-1"
+                            onPress={toggleAddModal}
+                        >
+                            <View className="absolute bottom-20 right-3">
+                                <TouchableOpacity
+                                    className="w-14 h-14"
+                                    onPress={() => {
+                                        toggleAddModal();
+                                        navigation.navigate('Note', { addNote, updateNote });
+                                    }}
+                                >
+                                    <Image
+                                        source={require('../images/add-check.png')}
+                                        className="w-14 h-14 absolute bottom-2"
+                                    />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="w-14 h-14"
+                                    onPress={() => {
+                                        toggleAddModal();
+                                        navigation.navigate('Note', { addNote, updateNote });
+                                    }}
+                                >
+                                    <Image
+                                        source={require('../images/add-note.png')}
+                                        className="w-14 h-14 absolute bottom-3"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
+                </View>
                 <View>
                     <DeleteModal
                         visible={modalVisible}
