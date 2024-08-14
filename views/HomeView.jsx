@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable, Modal } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable, Modal, TextInput } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Note from '../components/Note.jsx'
 import DeleteModal from '../components/DeleteModal.jsx'
@@ -7,6 +7,8 @@ import * as Haptics from 'expo-haptics';
 
 const HomeView = ({ navigation }) => {
     const [notes, setNotes] = useState([]);
+    const [filteredNotes, setFilteredNotes] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedNote, setSelectedNote] = useState(null);
     const [addModalVisible, setAddModalVisible] = useState(false);
@@ -37,6 +39,14 @@ const HomeView = ({ navigation }) => {
         saveNotes(notes);
     }, [notes]);
 
+    useEffect(() => {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        const filtered = notes.filter(note =>
+            note.text.toLowerCase().includes(lowercasedQuery)
+        );
+        setFilteredNotes(filtered);
+    }, [searchQuery, notes]);
+
     const loadNotes = async () => {
         try {
             const savedNotes = await AsyncStorage.getItem('notes');
@@ -54,7 +64,7 @@ const HomeView = ({ navigation }) => {
         try {
             await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
         } catch (error) {
-
+            console.error('', error);
         }
     };
 
@@ -81,12 +91,20 @@ const HomeView = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView>
+        <SafeAreaView className="pt-10">
             <View>
                 <View className="bg-white h-full px-2 w-screen ${notes.length > 1 ? 'items-center' : ''}">
+                    <View className="p-2">
+                        <TextInput
+                            className="border border-[#ddd] rounded-md p-2"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
                     <FlatList
                         numColumns={2}
-                        data={notes}
+                        data={filteredNotes}
                         keyExtractor={(item) => item.id}
                         columnWrapperStyle={{
                             flex: 1

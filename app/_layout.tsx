@@ -23,6 +23,7 @@ export default function RootLayout() {
             headerStyle: {
               backgroundColor: '#FFFFFF', // Цвет фона заголовка
             },
+            headerShown: false, // Скрыть заголовок
           }}
         />
         <Stack.Screen
