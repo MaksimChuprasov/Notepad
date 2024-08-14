@@ -103,14 +103,14 @@ const HomeView = ({ navigation }) => {
                         )}
                     />
                 </View>
-                <View className="flex-1 justify-end">
+                <View className="flex-1 justify-end items-end">
                     <TouchableOpacity
-                        title='Add Note'
+                        className="absolute bottom-3 right-3"
                         onPress={toggleAddModal}
                     >
                         <Image
                             source={require('../images/plus.png')}
-                            className="w-20 h-20 absolute bottom-3 right-3"
+                            className="w-20 h-20"
                         />
                     </TouchableOpacity>
                     <Modal
@@ -123,7 +123,7 @@ const HomeView = ({ navigation }) => {
                             className="flex-1"
                             onPress={toggleAddModal}
                         >
-                            <View className="absolute bottom-20 right-3">
+                            <View className="absolute bottom-24 right-3">
                                 <TouchableOpacity
                                     className="w-14 h-14"
                                     onPress={() => {
@@ -133,7 +133,7 @@ const HomeView = ({ navigation }) => {
                                 >
                                     <Image
                                         source={require('../images/add-check.png')}
-                                        className="w-14 h-14 absolute bottom-2"
+                                        className="w-14 h-14"
                                     />
                                 </TouchableOpacity>
                                 <TouchableOpacity
@@ -145,7 +145,7 @@ const HomeView = ({ navigation }) => {
                                 >
                                     <Image
                                         source={require('../images/add-note.png')}
-                                        className="w-14 h-14 absolute bottom-3"
+                                        className="w-14 h-14"
                                     />
                                 </TouchableOpacity>
                             </View>

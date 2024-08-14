@@ -1,15 +1,21 @@
-import { View, Text, TextInput, TouchableOpacity, Image, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, TextInput } from 'react-native'
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 
 const NoteView = ({ navigation, route }) => {
-    const { addNote, updateNote, noteToEdit } = route.params || {};
-    const [text, setText] = useState(noteToEdit ? noteToEdit.text : '');
-    const [files, setFiles] = useState(noteToEdit ? noteToEdit.files : []);
+    const { addNote, updateNote, noteToEdit: initialNoteToEdit } = route.params || {};
+    const [noteToEdit, setNoteToEdit] = useState(initialNoteToEdit); // Initialize state with noteToEdit from route.params
+    const [text, setText] = useState(initialNoteToEdit ? initialNoteToEdit.text : ''); // Initialize text state
+    const [files, setFiles] = useState(initialNoteToEdit ? initialNoteToEdit.files : []); // Initialize files state
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [editedFileContent, setEditedFileContent] = useState('');
 
+    const isFocused = useIsFocused(); // Track whether the screen is focused
+
+    // Update text and files when noteToEdit changes
     useEffect(() => {
         if (noteToEdit) {
             setText(noteToEdit.text);
@@ -35,78 +41,28 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-    const getNewFileUri = (originalUri) => {
-        const timestamp = new Date().getTime();
-        const lastIndex = originalUri.lastIndexOf('/');
-        const directory = originalUri.substring(0, lastIndex + 1);
-        const fileName = originalUri.substring(lastIndex + 1);
-
-        const newFileUri = `${directory}copy_${timestamp}_${fileName}`;
-        return newFileUri;
-    };
-
-    const saveFileToDownloads = async (fileUri, fileName) => {
-        try {
-            const downloadsDirectory = `${FileSystem.documentDirectory}Documents/`;
-            await FileSystem.makeDirectoryAsync(downloadsDirectory, { intermediates: true });
-
-            const newFileUri = `${downloadsDirectory}${fileName}`;
-
-            await FileSystem.copyAsync({
-                from: fileUri,
-                to: newFileUri,
-            });
-        } catch (error) {
-            console.error('Error saving file to Downloads:', error);
-        }
-    };
-
-    const copyFileToPermanentLocation = async (uri) => {
-        try {
-            const fileName = uri.split('/').pop();
-            const permanentFileUri = `${FileSystem.documentDirectory}Documents/${fileName}`;
-
-            // Копируем файл в постоянное место
-            await FileSystem.copyAsync({
-                from: uri,
-                to: permanentFileUri,
-            });
-
-            return permanentFileUri;
-        } catch (error) {
-            console.error('Error copying file:', error);
-            throw error;
-        }
-    };
-
     const saveEditedFile = async () => {
         if (editingFileIndex !== -1) {
             try {
                 const originalFileUri = files[editingFileIndex].uri;
-    
-                // Проверяем, находится ли файл в временной директории
-                const permanentFileUri = originalFileUri.startsWith('file:///data/user/0/host.exp.exponent/cache')
-                    ? await copyFileToPermanentLocation(originalFileUri)
-                    : originalFileUri;
-
-                    console.log(permanentFileUri)
-    
-                // Перезаписываем файл с новыми данными
-                await FileSystem.writeAsStringAsync(permanentFileUri, editedFileContent);
-    
-                // Обновляем список файлов с новым URI
-                const updatedFiles = [...files];
-                updatedFiles[editingFileIndex] = { ...updatedFiles[editingFileIndex], uri: permanentFileUri };
-                setFiles(updatedFiles);
-    
-                // Сбрасываем индекс и содержимое редактируемого файла
+                
+                // Логирование исходного URI для отладки
+                console.log("Original URI:", originalFileUri);
+        
+                // Перезаписываем исходный файл с новым содержимым
+                await FileSystem.writeAsStringAsync(originalFileUri, editedFileContent);
+        
+                // Логирование для подтверждения сохранения содержимого
+                console.log("Updated file content:", editedFileContent);
+        
+                // Сбрасываем состояние редактирования
                 setEditingFileIndex(-1);
                 setEditedFileContent('');
-    
-                Alert.alert('Success', 'File has been saved.');
+        
+                Alert.alert('Успех', originalFileUri);
             } catch (err) {
-                console.error('Error saving file:', err);
-                Alert.alert('Error', 'Unable to save file.');
+                console.error('Ошибка при сохранении файла:', err);
+                Alert.alert('Ошибка', 'Не удалось сохранить файл.');
             }
         }
     };
@@ -116,7 +72,6 @@ const NoteView = ({ navigation, route }) => {
             const fileContent = await FileSystem.readAsStringAsync(fileUri, {
                 encoding: FileSystem.EncodingType.UTF8,
             });
-            console.log('File Content:', fileContent); // Проверьте содержимое файла
             setEditingFileIndex(index);
             setEditedFileContent(fileContent);
         } catch (err) {
@@ -142,13 +97,25 @@ const NoteView = ({ navigation, route }) => {
         }
 
         try {
-            // Здесь уже не нужно перезаписывать файлы, так как это делается в saveEditedFile
+            // Add any additional logic to save files if needed
         } catch (error) {
             console.error('Error saving files:', error);
         }
 
-        navigation.goBack();
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+        } else {
+            // Если нельзя вернуться, например, можно перенаправить на другой экран
+            navigation.navigate('Home'); // Замените 'Home' на нужный вам экран
+        }
     };
+
+    // Use useEffect to track when the screen loses focus
+    useEffect(() => {
+        if (!isFocused) {
+            saveNote();
+        }
+    }, [isFocused, text, files, noteToEdit]); // Depend on isFocused, text, files, and noteToEdit
 
     return (
         <View className="bg-white h-full">
@@ -201,16 +168,6 @@ const NoteView = ({ navigation, route }) => {
                         />
                     </TouchableOpacity>
                 )}
-                <TouchableOpacity
-                    className="flex rounded-2xl w-20 h-20 justify-center items-center ml-auto mr-1"
-                    title='Save Note'
-                    onPress={saveNote}
-                >
-                    <Image
-                        source={require('../images/save-note.png')}
-                        className="w-10 h-10"
-                    />
-                </TouchableOpacity>
             </View>
         </View>
     );
