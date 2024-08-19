@@ -1,9 +1,9 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const Note = ({ note }) => {
+const Note = ({ note, style }) => {
     return (
-      <View className="m-1 border border-[#d1d1d1] rounded-xl p-1 w-40 bg-white h-full">
+      <View style={[style]} className="m-1 border border-[#d1d1d1] rounded-xl p-1 w-40 bg-white h-full justify-center">
             <Text className="text-md font-medium" numberOfLines={3} ellipsizeMode="tail">{note.text}</Text>
             {note.files && note.files.length > 0 && (
                 <View className="mt-2">

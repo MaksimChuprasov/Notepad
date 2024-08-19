@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeView from "../views/HomeView.jsx";
 import NoteView from "../views/NoteView.jsx";
+import CheckList from"../views/CkeckList.jsx";
 
 const Stack = createStackNavigator();
 
@@ -31,6 +32,21 @@ export default function RootLayout() {
           component={NoteView}
           options={{
             title: 'New Note',
+            headerTitleStyle: {
+              color: '#696969', // Цвет заголовка
+              fontSize: 24, // Размер шрифта
+              fontWeight: 'bold', // Жирный шрифт
+            },
+            headerStyle: {
+              backgroundColor: '#FFFFFF', // Цвет фона заголовка
+            },
+          }}
+        />
+        <Stack.Screen
+          name="Check"
+          component={CheckList}
+          options={{
+            title: 'CheckList',
             headerTitleStyle: {
               color: '#696969', // Цвет заголовка
               fontSize: 24, // Размер шрифта
