@@ -12,6 +12,7 @@ const NoteView = ({ navigation, route }) => {
     const [files, setFiles] = useState(initialNoteToEdit ? initialNoteToEdit.files : []); // Initialize files state
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [editedFileContent, setEditedFileContent] = useState('');
+    const [fileUri, setFileUri] = useState('');
 
     const isFocused = useIsFocused(); // Track whether the screen is focused
 
@@ -42,37 +43,37 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const saveEditedFile = async () => {
-        if (editingFileIndex !== -1) {
+        if (fileUri) {
             try {
-                const originalFileUri = files[editingFileIndex].uri;
-                
-                // Логирование исходного URI для отладки
-                console.log("Original URI:", originalFileUri);
-        
-                // Перезаписываем исходный файл с новым содержимым
-                await FileSystem.writeAsStringAsync(originalFileUri, editedFileContent);
-        
-                // Логирование для подтверждения сохранения содержимого
-                console.log("Updated file content:", editedFileContent);
-        
-                // Сбрасываем состояние редактирования
-                setEditingFileIndex(-1);
-                setEditedFileContent('');
-        
-                Alert.alert('Успех', originalFileUri);
+                // Путь для сохранения файла
+                const documentDirectory = FileSystem.documentDirectory;
+                const fileName = fileUri.split('/').pop(); // Извлечение имени файла
+                const destinationUri = documentDirectory + fileName;
+    
+                // Запись содержимого в указанное место
+                await FileSystem.writeAsStringAsync(destinationUri, editedFileContent, {
+                    encoding: FileSystem.EncodingType.UTF8,
+                });
+    
+                Alert.alert('Успех', `Файл успешно сохранен в ${destinationUri}`);
             } catch (err) {
                 console.error('Ошибка при сохранении файла:', err);
                 Alert.alert('Ошибка', 'Не удалось сохранить файл.');
             }
+        } else {
+            Alert.alert('Ошибка', 'Не найден URI файла.');
         }
     };
 
     const openFile = async (fileUri, index) => {
+        setEditingFileIndex(index);
+        setEditedFileContent('');
+        setFileUri(fileUri);
+        console.log('Opening file with URI:', fileUri);
         try {
             const fileContent = await FileSystem.readAsStringAsync(fileUri, {
                 encoding: FileSystem.EncodingType.UTF8,
             });
-            setEditingFileIndex(index);
             setEditedFileContent(fileContent);
         } catch (err) {
             console.error('Error opening file:', err);

@@ -9,15 +9,9 @@ const HomeView = ({ navigation }) => {
     const [notes, setNotes] = useState([]);
     const [filteredNotes, setFilteredNotes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
     const [selectedNote, setSelectedNote] = useState(null);
-    const [addModalVisible, setAddModalVisible] = useState(false);
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-
-    const toggleAddModal = () => {
-        setAddModalVisible(!addModalVisible);
-    };
 
     const addNote = (note) => {
         const newNote = { id: Date.now().toString(), text: note.text, files: note.files };
@@ -28,9 +22,17 @@ const HomeView = ({ navigation }) => {
         });
     };
 
-    const updateNote = (updatedNotes) => {
-        setNotes(updatedNotes);
-        saveNotes(updatedNotes);
+    const updateNote = (updateFunction) => {
+        setNotes((prevNotes) => {
+            const updatedNotes = updateFunction(prevNotes);
+            if (Array.isArray(updatedNotes)) {
+                saveNotes(updatedNotes);
+                return updatedNotes;
+            } else {
+                console.warn('Updated notes data is invalid:', updatedNotes);
+                return prevNotes;
+            }
+        });
     };
 
     useEffect(() => {
@@ -49,16 +51,25 @@ const HomeView = ({ navigation }) => {
         setFilteredNotes(filtered);
     }, [searchQuery, notes]);
 
+    useEffect(() => {
+        // Check if the selection is empty and turn off select mode if needed
+        if (selectMode && selectedNotes.length === 0) {
+            setSelectMode(false);
+        }
+    }, [selectedNotes]);
+
     const loadNotes = async () => {
         try {
             const savedNotes = await AsyncStorage.getItem('notes');
-            if (savedNotes !== null) {
+            if (savedNotes) {
                 const parsedNotes = JSON.parse(savedNotes);
                 const validNotes = parsedNotes.filter(note => note && note.id);
                 setNotes(validNotes);
+            } else {
+                setNotes([]);
             }
         } catch (error) {
-            console.error('', error);
+            console.error('Error loading notes:', error);
         }
     };
 
@@ -91,18 +102,23 @@ const HomeView = ({ navigation }) => {
     const handleDeleteSelected = () => {
         setNotes((prevNotes) => {
             const updatedNotes = prevNotes.filter(note => !selectedNotes.includes(note.id));
+            if (updatedNotes.length === 0) {
+                setSelectMode(false); // Exit select mode if there are no more notes
+            }
             saveNotes(updatedNotes);
             return updatedNotes;
         });
         setSelectedNotes([]);
     };
 
-
-
     const handleOutsidePress = () => {
-        setSelectedNotes([]);
-        setSelectMode(false);
+        if (selectMode) {
+            // Clear selection and exit select mode if there are no selected notes
+            setSelectedNotes([]);
+            setSelectMode(false);
+        }
     };
+
 
     return (
         <SafeAreaView className="pt-10">
@@ -155,51 +171,15 @@ const HomeView = ({ navigation }) => {
                     <View className="flex-1 justify-end items-end">
                         <TouchableOpacity
                             className="absolute bottom-3 right-3"
-                            onPress={toggleAddModal}
+                            onPress={() => {
+                                navigation.navigate('Note', { addNote, updateNote });
+                            }}
                         >
                             <Image
                                 source={require('../images/plus.png')}
                                 className="w-20 h-20"
                             />
                         </TouchableOpacity>
-                        <Modal
-                            transparent={true}
-                            visible={addModalVisible}
-                            animationType="none"
-                            onRequestClose={toggleAddModal}
-                        >
-                            <TouchableOpacity
-                                className="flex-1"
-                                onPress={toggleAddModal}
-                            >
-                                <View className="absolute bottom-24 right-3">
-                                    <TouchableOpacity
-                                        className="w-14 h-14"
-                                        onPress={() => {
-                                            toggleAddModal();
-                                            navigation.navigate('Check', { addNote, updateNote });
-                                        }}
-                                    >
-                                        <Image
-                                            source={require('../images/add-check.png')}
-                                            className="w-14 h-14"
-                                        />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        className="w-14 h-14"
-                                        onPress={() => {
-                                            toggleAddModal();
-                                            navigation.navigate('Note', { addNote, updateNote });
-                                        }}
-                                    >
-                                        <Image
-                                            source={require('../images/add-note.png')}
-                                            className="w-14 h-14"
-                                        />
-                                    </TouchableOpacity>
-                                </View>
-                            </TouchableOpacity>
-                        </Modal>
                     </View>
                 </View>
             </TouchableWithoutFeedback>
