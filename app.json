@@ -5,19 +5,14 @@
     "version": "1.0.0",
     "scheme": "Notepad",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./images/logo.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.maksim_chuprasov.Notepad",

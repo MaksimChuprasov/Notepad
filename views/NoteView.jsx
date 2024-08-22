@@ -1,28 +1,43 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, } from 'react';
 import { Alert } from 'react-native';
-import { View, Text, TouchableOpacity, Image, TextInput } from 'react-native'
+import { View, Text, TouchableOpacity, Image, TextInput, TouchableWithoutFeedback } from 'react-native'
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import DeleteModal from '../components/SaveModal'
 
 const NoteView = ({ navigation, route }) => {
     const { addNote, updateNote, noteToEdit: initialNoteToEdit } = route.params || {};
-    const [noteToEdit, setNoteToEdit] = useState(initialNoteToEdit); // Initialize state with noteToEdit from route.params
-    const [text, setText] = useState(initialNoteToEdit ? initialNoteToEdit.text : ''); // Initialize text state
-    const [files, setFiles] = useState(initialNoteToEdit ? initialNoteToEdit.files : []); // Initialize files state
+    const [noteToEdit, setNoteToEdit] = useState(initialNoteToEdit);
+    const [text, setText] = useState(initialNoteToEdit ? initialNoteToEdit.text : '');
+    const [files, setFiles] = useState(initialNoteToEdit ? initialNoteToEdit.files : []);
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [editedFileContent, setEditedFileContent] = useState('');
     const [fileUri, setFileUri] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
+    const [showSaveModal, setshowSaveModal] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
 
-    const isFocused = useIsFocused(); // Track whether the screen is focused
+    const isFocused = useIsFocused();
 
-    // Update text and files when noteToEdit changes
     useEffect(() => {
         if (noteToEdit) {
             setText(noteToEdit.text);
             setFiles(noteToEdit.files || []);
         }
     }, [noteToEdit]);
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (!isNavigating && (text !== initialNoteToEdit?.text || files !== initialNoteToEdit?.files)) {
+                e.preventDefault();
+                setshowSaveModal(true);
+            }
+        });
+
+        return unsubscribe;
+    }, [navigation, text, files, initialNoteToEdit, isNavigating]);
 
     const selectFiles = async () => {
         try {
@@ -45,31 +60,37 @@ const NoteView = ({ navigation, route }) => {
     const saveEditedFile = async () => {
         if (fileUri) {
             try {
-                // Путь для сохранения файла
                 const documentDirectory = FileSystem.documentDirectory;
-                const fileName = fileUri.split('/').pop(); // Извлечение имени файла
+                const fileName = fileUri.split('/').pop();
                 const destinationUri = documentDirectory + fileName;
-    
-                // Запись содержимого в указанное место
+
                 await FileSystem.writeAsStringAsync(destinationUri, editedFileContent, {
                     encoding: FileSystem.EncodingType.UTF8,
                 });
-    
-                Alert.alert('Успех', `Файл успешно сохранен в ${destinationUri}`);
+
+                // Обновляем состояние файлов с новым URI
+                setFiles((prevFiles) =>
+                    prevFiles.map((file, index) =>
+                        index === editingFileIndex ? { ...file, uri: destinationUri } : file
+                    )
+                );
+
+                setIsEditing(false);
+                setEditingFileIndex(-1);
+                setSaveButtonLabel('Save File');
+                setFileUri('');
+                setEditedFileContent('');
             } catch (err) {
-                console.error('Ошибка при сохранении файла:', err);
-                Alert.alert('Ошибка', 'Не удалось сохранить файл.');
+                console.error('Error saving file:', err);
             }
-        } else {
-            Alert.alert('Ошибка', 'Не найден URI файла.');
         }
     };
 
     const openFile = async (fileUri, index) => {
         setEditingFileIndex(index);
-        setEditedFileContent('');
         setFileUri(fileUri);
-        console.log('Opening file with URI:', fileUri);
+        setSaveButtonLabel('Save Changes');
+        setIsEditing(true);
         try {
             const fileContent = await FileSystem.readAsStringAsync(fileUri, {
                 encoding: FileSystem.EncodingType.UTF8,
@@ -81,7 +102,7 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-    const saveNote = async () => {
+    const saveNote = () => {
         if (noteToEdit) {
             noteToEdit.text = text;
             noteToEdit.files = files;
@@ -97,29 +118,30 @@ const NoteView = ({ navigation, route }) => {
             });
         }
 
-        try {
-            // Add any additional logic to save files if needed
-        } catch (error) {
-            console.error('Error saving files:', error);
-        }
-
-        if (navigation.canGoBack()) {
+        setshowSaveModal(false);
+        setIsNavigating(true);
+        setTimeout(() => {
             navigation.goBack();
-        } else {
-            // Если нельзя вернуться, например, можно перенаправить на другой экран
-            navigation.navigate('Home'); // Замените 'Home' на нужный вам экран
+        }, 100);
+    };
+    
+    const handleExitWithoutSaving = () => {
+        setshowSaveModal(false);
+        setIsNavigating(true);
+        setTimeout(() => {
+            navigation.goBack();
+        }, 100);
+    };
+
+    const handleOutsidePress = () => {
+        if (showSaveModal) {
+            setshowSaveModal(false);
         }
     };
 
-    // Use useEffect to track when the screen loses focus
-    useEffect(() => {
-        if (!isFocused) {
-            saveNote();
-        }
-    }, [isFocused, text, files, noteToEdit]); // Depend on isFocused, text, files, and noteToEdit
-
     return (
         <View className="bg-white h-full">
+
             <TextInput
                 className="p-2 mt-2 mx-2 bg-white"
                 placeholder='Enter your note...'
@@ -170,6 +192,13 @@ const NoteView = ({ navigation, route }) => {
                     </TouchableOpacity>
                 )}
             </View>
+
+            <DeleteModal
+                visible={showSaveModal}
+                onExit={handleExitWithoutSaving}
+                onSave={saveNote}
+                onClose={handleOutsidePress}
+            />
         </View>
     );
 };

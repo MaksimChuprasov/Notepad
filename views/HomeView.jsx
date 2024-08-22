@@ -1,7 +1,6 @@
 import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable, Modal, TextInput, Button, TouchableWithoutFeedback } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Note from '../components/Note.jsx'
-import DeleteModal from '../components/DeleteModal.jsx'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 
@@ -9,7 +8,6 @@ const HomeView = ({ navigation }) => {
     const [notes, setNotes] = useState([]);
     const [filteredNotes, setFilteredNotes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedNote, setSelectedNote] = useState(null);
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
 
@@ -52,7 +50,6 @@ const HomeView = ({ navigation }) => {
     }, [searchQuery, notes]);
 
     useEffect(() => {
-        // Check if the selection is empty and turn off select mode if needed
         if (selectMode && selectedNotes.length === 0) {
             setSelectMode(false);
         }
@@ -103,7 +100,7 @@ const HomeView = ({ navigation }) => {
         setNotes((prevNotes) => {
             const updatedNotes = prevNotes.filter(note => !selectedNotes.includes(note.id));
             if (updatedNotes.length === 0) {
-                setSelectMode(false); // Exit select mode if there are no more notes
+                setSelectMode(false);
             }
             saveNotes(updatedNotes);
             return updatedNotes;
@@ -113,7 +110,6 @@ const HomeView = ({ navigation }) => {
 
     const handleOutsidePress = () => {
         if (selectMode) {
-            // Clear selection and exit select mode if there are no selected notes
             setSelectedNotes([]);
             setSelectMode(false);
         }
