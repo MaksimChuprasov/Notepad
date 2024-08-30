@@ -1,43 +1,87 @@
-import React, { useState, useEffect, useCallback, } from 'react';
-import { Alert } from 'react-native';
-import { View, Text, TouchableOpacity, Image, TextInput, TouchableWithoutFeedback } from 'react-native'
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import DeleteModal from '../components/SaveModal'
+import NoteContext from '../app/NoteContext';
+import SaveModal from '../components/SaveModal'
 
 const NoteView = ({ navigation, route }) => {
-    const { addNote, updateNote, noteToEdit: initialNoteToEdit } = route.params || {};
-    const [noteToEdit, setNoteToEdit] = useState(initialNoteToEdit);
+    const { addNote, updateNote } = useContext(NoteContext);
+    const { noteToEdit: initialNoteToEdit } = route.params || {};
+    const { noteToEdit } = route.params || {};
     const [text, setText] = useState(initialNoteToEdit ? initialNoteToEdit.text : '');
+    const [title, setTitle] = useState(initialNoteToEdit ? initialNoteToEdit.title : '');
     const [files, setFiles] = useState(initialNoteToEdit ? initialNoteToEdit.files : []);
-    const [editingFileIndex, setEditingFileIndex] = useState(-1);
+    const [isEditing, setIsEditing] = useState(false);
     const [editedFileContent, setEditedFileContent] = useState('');
     const [fileUri, setFileUri] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
-    const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
-    const [showSaveModal, setshowSaveModal] = useState(false);
+    const [showSaveModal, setShowSaveModal] = useState(false);
     const [isNavigating, setIsNavigating] = useState(false);
+    const [editingFileIndex, setEditingFileIndex] = useState(-1);
+    const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
 
     const isFocused = useIsFocused();
 
     useEffect(() => {
         if (noteToEdit) {
-            setText(noteToEdit.text);
+            setTitle(noteToEdit.title || '');
+            setText(noteToEdit.text || '');
             setFiles(noteToEdit.files || []);
+        } else {
+            setTitle('');
+            setText('');
+            setFiles([]);
         }
     }, [noteToEdit]);
 
+    const saveNote = () => {
+        const updatedNote = {
+            id: noteToEdit ? noteToEdit.id : Date.now().toString(),
+            title,
+            text,
+            files
+        };
+
+        if (noteToEdit) {
+            updateNote(updatedNote);
+        } else {
+            addNote(updatedNote);
+        }
+
+        navigation.goBack();
+    };
+
     useEffect(() => {
         const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-            if (!isNavigating && (text !== initialNoteToEdit?.text || files !== initialNoteToEdit?.files)) {
+            const hasChanges =
+                text !== initialNoteToEdit?.text ||
+                title !== initialNoteToEdit?.title ||
+                files.length !== (initialNoteToEdit?.files?.length || 0);
+
+            if (hasChanges) {
                 e.preventDefault();
-                setshowSaveModal(true);
+                setShowSaveModal(true);
             }
         });
 
         return unsubscribe;
-    }, [navigation, text, files, initialNoteToEdit, isNavigating]);
+    }, [navigation, text, title, files, initialNoteToEdit]);
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            const hasChanges = text !== initialNoteToEdit?.text ||
+                title !== initialNoteToEdit?.title ||
+                files.length !== (initialNoteToEdit?.files?.length || 0);
+
+            if (!isNavigating && hasChanges) {
+                e.preventDefault();
+                setShowSaveModal(true);
+            }
+        });
+
+        return unsubscribe;
+    }, [navigation, text, title, files, initialNoteToEdit, isNavigating]);
 
     const selectFiles = async () => {
         try {
@@ -68,7 +112,6 @@ const NoteView = ({ navigation, route }) => {
                     encoding: FileSystem.EncodingType.UTF8,
                 });
 
-                // Обновляем состояние файлов с новым URI
                 setFiles((prevFiles) =>
                     prevFiles.map((file, index) =>
                         index === editingFileIndex ? { ...file, uri: destinationUri } : file
@@ -98,35 +141,11 @@ const NoteView = ({ navigation, route }) => {
             setEditedFileContent(fileContent);
         } catch (err) {
             console.error('Error opening file:', err);
-            Alert.alert('Error', 'Unable to open file.');
         }
     };
 
-    const saveNote = () => {
-        if (noteToEdit) {
-            noteToEdit.text = text;
-            noteToEdit.files = files;
-            updateNote((prevNotes) =>
-                prevNotes.map((note) =>
-                    note.id === noteToEdit.id ? noteToEdit : note
-                )
-            );
-        } else {
-            addNote({
-                text,
-                files,
-            });
-        }
-
-        setshowSaveModal(false);
-        setIsNavigating(true);
-        setTimeout(() => {
-            navigation.goBack();
-        }, 100);
-    };
-    
     const handleExitWithoutSaving = () => {
-        setshowSaveModal(false);
+        setShowSaveModal(false);
         setIsNavigating(true);
         setTimeout(() => {
             navigation.goBack();
@@ -135,13 +154,37 @@ const NoteView = ({ navigation, route }) => {
 
     const handleOutsidePress = () => {
         if (showSaveModal) {
-            setshowSaveModal(false);
+            setShowSaveModal(false);
         }
     };
 
+    const handleBackPress = () => {
+        if (text !== noteToEdit?.text ||
+            title !== noteToEdit?.title ||
+            files.length !== (noteToEdit?.files?.length || 0)) {
+                setShowSaveModal(true);
+        } else {
+            navigation.goBack();
+        }
+    };
+    
     return (
-        <View className="bg-white h-full">
-
+        <SafeAreaView className=" h-full pt-9 bg-white">
+            <View className="flex-row items-center">
+                <TouchableOpacity className="mx-2" onPress={handleBackPress}>
+                    <Image
+                        source={require('../images/back.png')}
+                        className="w-8 h-8 mt-4"
+                    />
+                </TouchableOpacity>
+                <TextInput
+                    className="p-2 mt-2 bg-white text-xl font-bold w-full"
+                    placeholder='New Note'
+                    onChangeText={(title) => setTitle(title)}
+                    value={title}
+                    multiline={true}
+                />
+            </View>
             <TextInput
                 className="p-2 mt-2 mx-2 bg-white"
                 placeholder='Enter your note...'
@@ -193,13 +236,13 @@ const NoteView = ({ navigation, route }) => {
                 )}
             </View>
 
-            <DeleteModal
+            <SaveModal
                 visible={showSaveModal}
                 onExit={handleExitWithoutSaving}
                 onSave={saveNote}
                 onClose={handleOutsidePress}
             />
-        </View>
+        </SafeAreaView>
     );
 };
 

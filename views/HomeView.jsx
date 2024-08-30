@@ -1,8 +1,8 @@
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Pressable, Modal, TextInput, Button, TouchableWithoutFeedback } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import Note from '../components/Note.jsx'
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
+import NoteContext from '../app/NoteContext';
+import { useFocusEffect } from '@react-navigation/native';
+import Note from '../components/Note';
 
 const HomeView = ({ navigation }) => {
     const [notes, setNotes] = useState([]);
@@ -10,102 +10,63 @@ const HomeView = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-
-    const addNote = (note) => {
-        const newNote = { id: Date.now().toString(), text: note.text, files: note.files };
-        setNotes((prevNotes) => {
-            const updatedNotes = [newNote, ...prevNotes];
-            saveNotes(updatedNotes);
-            return updatedNotes;
-        });
-    };
-
-    const updateNote = (updateFunction) => {
-        setNotes((prevNotes) => {
-            const updatedNotes = updateFunction(prevNotes);
-            if (Array.isArray(updatedNotes)) {
-                saveNotes(updatedNotes);
-                return updatedNotes;
-            } else {
-                console.warn('Updated notes data is invalid:', updatedNotes);
-                return prevNotes;
-            }
-        });
-    };
+    const { notes: contextNotes, addNote, updateNote, deleteNotes } = useContext(NoteContext); 
 
     useEffect(() => {
-        loadNotes();
-    }, []);
-
-    useEffect(() => {
-        saveNotes(notes);
-    }, [notes]);
+        setFilteredNotes(contextNotes);
+    }, [contextNotes]);
 
     useEffect(() => {
         const lowercasedQuery = searchQuery.toLowerCase();
-        const filtered = notes.filter(note =>
+        const filtered = contextNotes.filter(note =>
             note.text.toLowerCase().includes(lowercasedQuery)
         );
         setFilteredNotes(filtered);
-    }, [searchQuery, notes]);
+    }, [searchQuery, contextNotes]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            setFilteredNotes(contextNotes.filter(note =>
+                note.text.toLowerCase().includes(searchQuery.toLowerCase())
+            ));
+        }, [contextNotes, searchQuery])
+    );
 
     useEffect(() => {
-        if (selectMode && selectedNotes.length === 0) {
+        if (selectedNotes.length === 0) {
             setSelectMode(false);
         }
     }, [selectedNotes]);
 
-    const loadNotes = async () => {
-        try {
-            const savedNotes = await AsyncStorage.getItem('notes');
-            if (savedNotes) {
-                const parsedNotes = JSON.parse(savedNotes);
-                const validNotes = parsedNotes.filter(note => note && note.id);
-                setNotes(validNotes);
-            } else {
-                setNotes([]);
-            }
-        } catch (error) {
-            console.error('Error loading notes:', error);
-        }
-    };
-
-    const saveNotes = async (newNotes) => {
-        try {
-            await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
-        } catch (error) {
-            console.error('', error);
-        }
-    };
-
     const handleLongPress = (note) => {
-        Haptics.selectionAsync();
-        setSelectMode(true);
-        setSelectedNotes((prevSelected) => [...prevSelected, note.id]);
+        if (!selectMode) {
+            setSelectMode(true);
+        }
+        if (!selectedNotes.includes(note.id)) {
+            setSelectedNotes((prevSelected) => [...prevSelected, note.id]);
+        }
     };
 
     const handlePress = (note) => {
         if (selectMode) {
-            setSelectedNotes((prevSelected) =>
-                prevSelected.includes(note.id)
-                    ? prevSelected.filter(id => id !== note.id)
-                    : [...prevSelected, note.id]
-            );
+            if (selectedNotes.includes(note.id)) {
+                setSelectedNotes((prevSelected) =>
+                    prevSelected.filter(id => id !== note.id)
+                );
+            } else {
+                setSelectedNotes((prevSelected) => [...prevSelected, note.id]);
+            }
         } else {
-            navigation.navigate('Note', { addNote, updateNote, noteToEdit: note });
+            navigation.navigate('Note', {
+                noteToEdit: note
+            });
         }
     };
 
     const handleDeleteSelected = () => {
-        setNotes((prevNotes) => {
-            const updatedNotes = prevNotes.filter(note => !selectedNotes.includes(note.id));
-            if (updatedNotes.length === 0) {
-                setSelectMode(false);
-            }
-            saveNotes(updatedNotes);
-            return updatedNotes;
-        });
+        deleteNotes(selectedNotes);
         setSelectedNotes([]);
+        setSelectMode(false);
     };
 
     const handleOutsidePress = () => {
@@ -115,15 +76,14 @@ const HomeView = ({ navigation }) => {
         }
     };
 
-
     return (
-        <SafeAreaView className="pt-10">
+        <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
             <TouchableWithoutFeedback onPress={handleOutsidePress}>
-                <View>
-                    <View className="bg-white h-full px-2 w-screen ${notes.length > 1 ? 'items-center' : ''}">
+                <View className="flex-1">
+                    <View className="bg-[#F7F7F7] flex-1 px-2">
                         <View className="p-2 flex-row items-center">
                             <TextInput
-                                className="border border-[#ddd] rounded-md p-2 flex-1"
+                                className="border border-[#ddd] bg-white rounded-md p-2 flex-1"
                                 placeholder="Search..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
@@ -144,44 +104,30 @@ const HomeView = ({ navigation }) => {
                             numColumns={2}
                             data={filteredNotes}
                             keyExtractor={(item) => item.id}
-                            columnWrapperStyle={{
-                                flex: 1
-                            }}
+                            columnWrapperStyle={{ flex: 1 }}
                             renderItem={({ item }) => (
                                 <Pressable
-                                    className={`mb-3`}
                                     onLongPress={() => handleLongPress(item)}
                                     onPress={() => handlePress(item)}
                                 >
                                     <View className="flex-1">
-                                        <Note style={{
-                                            backgroundColor: selectedNotes.includes(item.id) ? '#e6e6e6' : 'white',
-                                            borderColor: selectedNotes.includes(item.id) ? '#8A2BE2' : '#d1d1d1',
-                                            borderWidth: selectedNotes.includes(item.id) ? 2 : 1
-                                        }} note={item} />
+                                        <Note
+                                            style={{
+                                                backgroundColor: selectedNotes.includes(item.id) ? '#e6e6e6' : 'white',
+                                                borderColor: selectedNotes.includes(item.id) ? '#8A2BE2' : '#d1d1d1',
+                                                borderWidth: selectedNotes.includes(item.id) ? 2 : 1
+                                            }}
+                                            note={item} // Передача данных
+                                        />
                                     </View>
                                 </Pressable>
                             )}
                         />
-                    </View>
-                    <View className="flex-1 justify-end items-end">
-                        <TouchableOpacity
-                            className="absolute bottom-3 right-3"
-                            onPress={() => {
-                                navigation.navigate('Note', { addNote, updateNote });
-                            }}
-                        >
-                            <Image
-                                source={require('../images/plus.png')}
-                                className="w-20 h-20"
-                            />
-                        </TouchableOpacity>
                     </View>
                 </View>
             </TouchableWithoutFeedback>
         </SafeAreaView>
     );
 };
-
 
 export default HomeView;
