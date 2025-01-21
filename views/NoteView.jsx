@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, BackHandler } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -23,6 +23,12 @@ const NoteView = ({ navigation, route }) => {
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
     const [Gptimage, setGptImage] = useState(require('../images/Chat_Gpt.png'));
+
+    const [isModalVisible, setModalVisible] = useState(false);
+
+    const toggleModal = () => {
+        setModalVisible(!isModalVisible);
+    };
 
     const toggleImage = () => {
         setGptImage((prevImage) =>
@@ -57,6 +63,10 @@ const NoteView = ({ navigation, route }) => {
             addNote(updatedNote);
         }
 
+        setTitle('');
+        setText('');
+        setFiles([]);
+
         navigation.goBack();
     };
 
@@ -75,6 +85,8 @@ const NoteView = ({ navigation, route }) => {
 
         return unsubscribe;
     }, [navigation, text, title, files, initialNoteToEdit]);
+
+
 
     const selectFiles = async () => {
         try {
@@ -146,6 +158,11 @@ const NoteView = ({ navigation, route }) => {
         setShowSaveModal(false);
         setGptImage(require('../images/Chat_Gpt.png'))
         setIsNavigating(true);
+
+        setTitle('');
+        setText('');
+        setFiles([]);
+
         setTimeout(() => {
             navigation.goBack();
         }, 100);
@@ -157,11 +174,12 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const handleBackPress = () => {
-        if (text !== noteToEdit?.text ||
-            title !== noteToEdit?.title ||
-            files.length !== (noteToEdit?.files?.length || 0)) {
+        if (text !== noteToEdit?.text || title !== noteToEdit?.title || files.length !== (noteToEdit?.files?.length || 0)) {
             setShowSaveModal(true);
         } else {
+            setTitle('');
+            setText('');
+            setFiles([]);
             navigation.goBack();
         }
     };
@@ -264,12 +282,13 @@ const NoteView = ({ navigation, route }) => {
                                         <Text className="text-[12px]">Add File</Text>
                                     </TouchableOpacity>
                                 )}
-                                
+
                             </View>
 
                             {/* Вторая кнопка */}
                             <TouchableOpacity
                                 className="bg-white items-center"
+                                onPress={toggleModal}
                             >
                                 <Image
                                     source={require('../images/plus.png')}
@@ -277,6 +296,73 @@ const NoteView = ({ navigation, route }) => {
                                 />
                                 <Text className="text-[12px]">Add</Text>
                             </TouchableOpacity>
+
+                            <Modal
+                                animationType="none"
+                                transparent={true}
+                                visible={isModalVisible}
+                                onRequestClose={toggleModal}
+                            >
+                                <TouchableWithoutFeedback onPress={toggleModal}>
+                                    <View className="flex-1">
+                                        {/* модальное окно */}
+                                        <View
+                                            className="absolute bottom-[75px] left-16 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
+                                        >
+                                            <TouchableOpacity
+                                                className="py-2 border-b border-gray-300"
+                                                onPress={() => { /* Add photo logic */ }}
+                                            >
+                                                <View className="flex-row">
+                                                    <Image
+                                                        source={require('../images/images.png')}
+                                                        className="w-5 h-5 mr-2"
+                                                    />
+                                                    <Text>Add Photo</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                className="py-2 border-b border-gray-300"
+                                                onPress={() => { /* Add photo logic */ }}
+                                            >
+                                                <View className="flex-row">
+                                                    <Image
+                                                        source={require('../images/tasks.png')}
+                                                        className="w-5 h-5 mr-2"
+                                                    />
+                                                    <Text>Add Tasks</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                            
+                                            <TouchableOpacity
+                                                className="py-2 border-b border-gray-300"
+                                                onPress={() => { /* Add photo logic */ }}
+                                            >
+                                                <View className="flex-row">
+                                                    <Image
+                                                        source={require('../images/microphone.png')}
+                                                        className="w-5 h-5 mr-2"
+                                                    />
+                                                    <Text>Add Voise Message</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                className="py-2 border-gray-300"
+                                                onPress={() => { /* Add photo logic */ }}
+                                            >
+                                                <View className="flex-row">
+                                                    <Image
+                                                        source={require('../images/location.png')}
+                                                        className="w-5 h-5 mr-2"
+                                                    />
+                                                    <Text>Add Location</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            </Modal>
+
 
                             {/* Третья кнопка */}
                             <TouchableOpacity
@@ -289,7 +375,7 @@ const NoteView = ({ navigation, route }) => {
                                 <Text className="text-[12px]">Formate text</Text>
                             </TouchableOpacity>
 
-                            {/* Кнопка создания заметки */}
+                            {/* Четвертая кнопка*/}
                             <TouchableOpacity
                                 className="bg-white items-center"
                             >

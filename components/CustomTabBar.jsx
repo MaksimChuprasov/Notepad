@@ -15,7 +15,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
         });
     };
 
-   
+
     const isTabBarVisible = currentRouteName !== 'Note';
 
     if (!isTabBarVisible) {
@@ -52,18 +52,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                 {/* Третья кнопка */}
                 <TouchableOpacity
                     className="bg-white items-center"
-                    onPress={() => navigation.navigate('Shop')}
-                >
-                    <Image
-                        source={require('../images/shop.png')}
-                        className="w-8 h-8"
-                    />
-                    <Text className="text-[12px]">Shop</Text>
-                </TouchableOpacity>
-
-                {/* Кнопка создания заметки */}
-                <TouchableOpacity
-                    className="bg-white items-center"
                     onPress={handleAddPress}
                 >
                     <Image
@@ -71,6 +59,19 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                         className="w-8 h-8"
                     />
                     <Text className="text-[12px]">New Note</Text>
+                </TouchableOpacity>
+
+
+                {/* Четвертая кнопка */}
+                <TouchableOpacity
+                    className="bg-white items-center"
+                    onPress={() => navigation.navigate('Shop')}
+                >
+                    <Image
+                        source={require('../images/profile.png')}
+                        className="w-8 h-8"
+                    />
+                    <Text className="text-[12px]">Profile</Text>
                 </TouchableOpacity>
             </View>
         </View>

@@ -3,6 +3,7 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, Sa
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import Note from '../components/Note';
+import { StatusBar } from 'expo-status-bar';
 
 const HomeView = ({ navigation }) => {
     const [notes, setNotes] = useState([]);
@@ -10,7 +11,7 @@ const HomeView = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes, addNote, updateNote, deleteNotes } = useContext(NoteContext); 
+    const { notes: contextNotes, addNote, updateNote, deleteNotes } = useContext(NoteContext);
 
     useEffect(() => {
         setFilteredNotes(contextNotes);
@@ -19,7 +20,12 @@ const HomeView = ({ navigation }) => {
     useEffect(() => {
         const lowercasedQuery = searchQuery.toLowerCase();
         const filtered = contextNotes.filter(note =>
-            note.text.toLowerCase().includes(lowercasedQuery)
+            note.text.toLowerCase().includes(lowercasedQuery) ||
+            note.title.toLowerCase().includes(lowercasedQuery) ||
+            note.files.some(file =>
+                typeof file === 'string' && file.toLowerCase().includes(lowercasedQuery) ||
+                file.name && file.name.toLowerCase().includes(lowercasedQuery)
+            )
         );
         setFilteredNotes(filtered);
     }, [searchQuery, contextNotes]);
@@ -27,7 +33,12 @@ const HomeView = ({ navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             setFilteredNotes(contextNotes.filter(note =>
-                note.text.toLowerCase().includes(searchQuery.toLowerCase())
+                note.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                note.files.some(file =>
+                    typeof file === 'string' && file.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    file.name && file.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
             ));
         }, [contextNotes, searchQuery])
     );
@@ -78,6 +89,7 @@ const HomeView = ({ navigation }) => {
 
     return (
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
+            <StatusBar style="dark" />
             <TouchableWithoutFeedback onPress={handleOutsidePress}>
                 <View className="flex-1">
                     <View className="bg-[#F7F7F7] flex-1 px-2">

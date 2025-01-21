@@ -10,7 +10,7 @@ const ShopView = () => {
     console.log(addNote, updateNote)
     return (
         <View className="mt-10">
-            <Text>Shop</Text>
+            <Text>Profile</Text>
         </View>
     );
 };

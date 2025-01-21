@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
 import SocialView from "../views/SocialView";
-import ShopView from "../views/ShopView";
+import ShopView from "../views/ProfileView";
 import NoteView from "../views/NoteView";
 import { NoteProvider } from "./NoteContext";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
