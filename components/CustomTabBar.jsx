@@ -6,6 +6,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
     const currentRouteName = state.routes[state.index].name;
     const { addNote, updateNote } = useContext(NoteContext);
+    const [log, setLog] = useState(false);
 
     const handleAddPress = () => {
         navigation.navigate('Note', {
@@ -20,6 +21,10 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
     if (!isTabBarVisible) {
         return null;
+    }
+
+    if (log) {
+
     }
 
     return (
@@ -64,8 +69,19 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
                 {/* Четвертая кнопка */}
                 <TouchableOpacity
+                    className="bg-white items-center hidden"
+                    onPress={() => navigation.navigate('LogIn')}
+                >
+                    <Image
+                        source={require('../images/profile.png')}
+                        className="w-8 h-8"
+                    />
+                    <Text className="text-[12px]">Log In</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                     className="bg-white items-center"
-                    onPress={() => navigation.navigate('Shop')}
+                    onPress={() => navigation.navigate('Profile')}
                 >
                     <Image
                         source={require('../images/profile.png')}
