@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import NoteContext from '../app/NoteContext';
 import SaveModal from '../components/SaveModal'
 import { PanGestureHandler } from 'react-native-gesture-handler';
-
+import * as ImagePicker from 'expo-image-picker';
 
 const NoteView = ({ navigation, route }) => {
     const { addNote, updateNote } = useContext(NoteContext);
@@ -201,6 +201,34 @@ const NoteView = ({ navigation, route }) => {
         }
     }
 
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+
+    const addPhoto = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                allowsEditing: false,
+                quality: 1,
+            });
+
+            if (!result.canceled) {
+                setSelectedImages([...selectedImages, result.assets[0].uri]);
+            }
+        } catch (error) {
+            console.error("Error selecting photo:", error);
+        }
+    };
+
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: '#fff',
+        },
+        scrollViewContent: {
+           
+        },
+    });
+
     return (
         <SafeAreaView className=" h-full pt-9 bg-white">
             <PanGestureHandler onGestureEvent={handleSwipe}>
@@ -226,33 +254,104 @@ const NoteView = ({ navigation, route }) => {
                             />
                         </TouchableOpacity>
                     </View>
-                    <TextInput
-                        className="p-2 mt-2 mx-2 bg-white"
-                        placeholder='Enter your note...'
-                        onChangeText={(text) => setText(text)}
-                        value={text}
-                        multiline={true}
-                    />
-                    <View className="px-3">
-                        {files.map((file, index) => (
-                            <View key={index}>
-                                <TouchableOpacity className="w-1/2 mb-1"
-                                    onPress={() => openFile(file.uri, index)}
-                                    onLongPress={() => deleteFile(index)}
+                    <ScrollView contentContainerStyle={styles.scrollViewContent}>
+                        <TextInput
+                            className="p-2 mt-2 mx-2 bg-white"
+                            placeholder='Enter your note...'
+                            onChangeText={(text) => setText(text)}
+                            value={text}
+                            multiline={true}
+                        />
+
+                        <View className="px-3">
+                            {files.map((file, index) => (
+                                <View key={index}>
+                                    <TouchableOpacity className="w-1/2 mb-1"
+                                        onPress={() => openFile(file.uri, index)}
+                                        onLongPress={() => deleteFile(index)}
+                                    >
+                                        <Text className="text-blue-600">{file.name}</Text>
+                                    </TouchableOpacity>
+                                    {editingFileIndex === index && (
+                                        <TextInput className="border p-2 rounded-lg"
+                                            onChangeText={(content) => setEditedFileContent(content)}
+                                            placeholder='Change your file...'
+                                            value={editedFileContent}
+                                            multiline={true}
+                                        />
+                                    )}
+                                </View>
+                            ))}
+                        </View>
+
+                        <View className='pt-4 px-3 w-full'>
+                            {selectedImages.map((uri, index) => (
+                                <Image
+                                    key={index}
+                                    source={{ uri }}
+                                    style={{
+                                        width: 300,
+                                        height: 400,
+                                        borderRadius: 8,
+                                        marginBottom: 12,
+                                    }}
+                                />
+                            ))}
+                        </View>
+                    </ScrollView>
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={isImageModalVisible}
+                        onRequestClose={() => setIsImageModalVisible(false)}
+                    >
+                        <View
+                            style={{
+                                flex: 1,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            }}
+                        >
+                            <View
+                                style={{
+                                    width: '80%',
+                                    backgroundColor: 'white',
+                                    borderRadius: 8,
+                                    padding: 16,
+                                }}
+                            >
+                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
+                                    Choose an Option
+                                </Text>
+
+                                <TouchableOpacity
+                                    style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'gray' }}
+                                    onPress={() => addPhoto(false)} // Для галереи
                                 >
-                                    <Text className="text-blue-600">{file.name}</Text>
+                                    <Text style={{ fontSize: 16 }}>Choose from Gallery</Text>
                                 </TouchableOpacity>
-                                {editingFileIndex === index && (
-                                    <TextInput className="border p-2 rounded-lg"
-                                        onChangeText={(content) => setEditedFileContent(content)}
-                                        placeholder='Change your file...'
-                                        value={editedFileContent}
-                                        multiline={true}
-                                    />
-                                )}
+
+                                <TouchableOpacity
+                                    style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'gray' }}
+                                    onPress={() => addPhoto(true)} // Для камеры
+                                >
+                                    <Text style={{ fontSize: 16 }}>Take a Photo</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={{
+                                        padding: 12,
+                                        marginTop: 8,
+                                        alignItems: 'center',
+                                    }}
+                                    onPress={() => setIsImageModalVisible(false)}
+                                >
+                                    <Text style={{ fontSize: 16, color: '#007AFF' }}>Cancel</Text>
+                                </TouchableOpacity>
                             </View>
-                        ))}
-                    </View>
+                        </View>
+                    </Modal>
 
                     <View className="bg-white py-2 px-6 absolute bottom-0 left-0 w-full">
                         <View className="flex-row justify-between">
@@ -311,7 +410,7 @@ const NoteView = ({ navigation, route }) => {
                                         >
                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
-                                                onPress={() => { /* Add photo logic */ }}
+                                                onPress={addPhoto}
                                             >
                                                 <View className="flex-row">
                                                     <Image
@@ -333,7 +432,7 @@ const NoteView = ({ navigation, route }) => {
                                                     <Text>Add Tasks</Text>
                                                 </View>
                                             </TouchableOpacity>
-                                            
+
                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
                                                 onPress={() => { /* Add photo logic */ }}
@@ -395,8 +494,9 @@ const NoteView = ({ navigation, route }) => {
                         onClose={handleOutsidePress}
                     />
                 </View>
+
             </PanGestureHandler>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 
