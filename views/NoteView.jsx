@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, FlatList } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -7,6 +7,7 @@ import NoteContext from '../app/NoteContext';
 import SaveModal from '../components/SaveModal'
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
+import Checkbox from 'expo-checkbox';
 
 const NoteView = ({ navigation, route }) => {
     const { addNote, updateNote } = useContext(NoteContext);
@@ -25,6 +26,20 @@ const NoteView = ({ navigation, route }) => {
     const [Gptimage, setGptImage] = useState(require('../images/Chat_Gpt.png'));
 
     const [isModalVisible, setModalVisible] = useState(false);
+
+    const [tasks, setTasks] = useState([]); // Храним список задач
+
+    const addTask = () => {
+        setTasks([...tasks, { id: Date.now().toString(), text: '', checked: false }]);
+    };
+
+    const updateTask = (id, newText) => {
+        setTasks(tasks.map(task => (task.id === id ? { ...task, text: newText } : task)));
+    };
+
+    const toggleCheckbox = (id) => {
+        setTasks(tasks.map(task => (task.id === id ? { ...task, checked: !task.checked } : task)));
+    };
 
     const toggleModal = () => {
         setModalVisible(!isModalVisible);
@@ -45,6 +60,7 @@ const NoteView = ({ navigation, route }) => {
             setTitle(initialNoteToEdit.title || '');
             setText(initialNoteToEdit.text || '');
             setFiles(initialNoteToEdit.files || []);
+            setTasks(initialNoteToEdit.tasks || []);
             setGptImage(require('../images/Chat_Gpt.png'))
         }
     }, [initialNoteToEdit]);
@@ -54,8 +70,11 @@ const NoteView = ({ navigation, route }) => {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files
+            files,
+            tasks,
         };
+
+        console.log("Saving note:", updatedNote);
 
         if (initialNoteToEdit) {
             updateNote(updatedNote);
@@ -66,6 +85,7 @@ const NoteView = ({ navigation, route }) => {
         setTitle('');
         setText('');
         setFiles([]);
+        setTasks([]);
 
         navigation.goBack();
     };
@@ -162,6 +182,7 @@ const NoteView = ({ navigation, route }) => {
         setTitle('');
         setText('');
         setFiles([]);
+        setTasks([]);
 
         setTimeout(() => {
             navigation.goBack();
@@ -180,6 +201,7 @@ const NoteView = ({ navigation, route }) => {
             setTitle('');
             setText('');
             setFiles([]);
+            setTasks([]);
             navigation.goBack();
         }
     };
@@ -225,7 +247,7 @@ const NoteView = ({ navigation, route }) => {
             backgroundColor: '#fff',
         },
         scrollViewContent: {
-           
+
         },
     });
 
@@ -298,6 +320,25 @@ const NoteView = ({ navigation, route }) => {
                                 />
                             ))}
                         </View>
+                        <FlatList
+                            nestedScrollEnabled={true}
+                            data={tasks}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <View className="flex-row items-center px-3">
+                                    <Checkbox
+                                        value={item.checked}
+                                        onValueChange={() => toggleCheckbox(item.id)}
+                                    />
+                                    <TextInput
+                                        className="ml-2 border-b border-gray-300 flex-1"
+                                        placeholder="Enter task"
+                                        value={item.text}
+                                        onChangeText={(text) => updateTask(item.id, text)}
+                                    />
+                                </View>
+                            )}
+                        />
                     </ScrollView>
                     <Modal
                         animationType="slide"
@@ -422,7 +463,7 @@ const NoteView = ({ navigation, route }) => {
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
-                                                onPress={() => { /* Add photo logic */ }}
+                                                onPress={addTask}
                                             >
                                                 <View className="flex-row">
                                                     <Image
