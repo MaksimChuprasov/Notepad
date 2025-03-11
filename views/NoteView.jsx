@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, FlatList } from 'react-native';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import NoteContext from '../app/NoteContext';
 import SaveModal from '../components/SaveModal'
-import { PanGestureHandler } from 'react-native-gesture-handler';
+import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import Checkbox from 'expo-checkbox';
 
@@ -16,6 +16,7 @@ const NoteView = ({ navigation, route }) => {
     const [text, setText] = useState(initialNoteToEdit ? initialNoteToEdit.text : '');
     const [title, setTitle] = useState(initialNoteToEdit ? initialNoteToEdit.title : '');
     const [files, setFiles] = useState(initialNoteToEdit ? initialNoteToEdit.files : []);
+    const [selectedImages, setSelectedImages] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [editedFileContent, setEditedFileContent] = useState('');
     const [fileUri, setFileUri] = useState('');
@@ -29,16 +30,31 @@ const NoteView = ({ navigation, route }) => {
 
     const [tasks, setTasks] = useState([]); // Храним список задач
 
+
+    // Функция добавления новой задачи
     const addTask = () => {
-        setTasks([...tasks, { id: Date.now().toString(), text: '', checked: false }]);
+        setTasks(prevTasks => [
+            ...prevTasks,
+            { id: Date.now().toString(), text: '', checked: false }
+        ]);
     };
 
+    // Функция обновления текста задачи
     const updateTask = (id, newText) => {
-        setTasks(tasks.map(task => (task.id === id ? { ...task, text: newText } : task)));
+        setTasks(prevTasks =>
+            prevTasks.map(task =>
+                task.id === id ? { ...task, text: newText } : task
+            )
+        );
     };
 
+    // Функция для переключения состояния checkbox
     const toggleCheckbox = (id) => {
-        setTasks(tasks.map(task => (task.id === id ? { ...task, checked: !task.checked } : task)));
+        setTasks(prevTasks =>
+            prevTasks.map(task =>
+                task.id === id ? { ...task, checked: !task.checked } : task
+            )
+        );
     };
 
     const toggleModal = () => {
@@ -56,21 +72,22 @@ const NoteView = ({ navigation, route }) => {
     const isFocused = useIsFocused();
 
     useEffect(() => {
-        if (initialNoteToEdit) {
-            setTitle(initialNoteToEdit.title || '');
-            setText(initialNoteToEdit.text || '');
-            setFiles(initialNoteToEdit.files || []);
-            setTasks(initialNoteToEdit.tasks || []);
-            setGptImage(require('../images/Chat_Gpt.png'))
+        if (route.params?.noteToEdit) {
+            setTitle(route.params.noteToEdit.title || '');
+            setText(route.params.noteToEdit.text || '');
+            setFiles(route.params.noteToEdit.files || []);
+            setTasks(route.params.noteToEdit?.tasks ?? []);
+
+            setSelectedImages(initialNoteToEdit.files?.map(file => file.uri) || []);
         }
-    }, [initialNoteToEdit]);
+    }, [route.params]);
 
     const saveNote = () => {
         const updatedNote = {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files,
+            files: [...files, ...selectedImages.map(uri => ({ uri }))],
             tasks,
         };
 
@@ -86,6 +103,7 @@ const NoteView = ({ navigation, route }) => {
         setText('');
         setFiles([]);
         setTasks([]);
+        setSelectedImages([]);
 
         navigation.goBack();
     };
@@ -95,8 +113,8 @@ const NoteView = ({ navigation, route }) => {
             const hasChanges =
                 text !== initialNoteToEdit?.text ||
                 title !== initialNoteToEdit?.title ||
-                files.length !== (initialNoteToEdit?.files?.length || 0);
-
+                JSON.stringify(files) !== JSON.stringify(initialNoteToEdit?.files || []) ||
+                JSON.stringify(tasks) !== JSON.stringify(initialNoteToEdit?.tasks || []);
             if (hasChanges) {
                 e.preventDefault();
                 setShowSaveModal(true);
@@ -104,7 +122,7 @@ const NoteView = ({ navigation, route }) => {
         });
 
         return unsubscribe;
-    }, [navigation, text, title, files, initialNoteToEdit]);
+    }, [navigation, text, title, files, tasks, initialNoteToEdit]);
 
 
 
@@ -174,6 +192,10 @@ const NoteView = ({ navigation, route }) => {
         setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
     };
 
+    const deleteImage = (index) => {
+        setSelectedImages((prevImage) => prevImage.filter((_, i) => i !== index));
+    };
+
     const handleExitWithoutSaving = () => {
         setShowSaveModal(false);
         setGptImage(require('../images/Chat_Gpt.png'))
@@ -183,6 +205,7 @@ const NoteView = ({ navigation, route }) => {
         setText('');
         setFiles([]);
         setTasks([]);
+        setSelectedImages([]);
 
         setTimeout(() => {
             navigation.goBack();
@@ -195,13 +218,14 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const handleBackPress = () => {
-        if (text !== noteToEdit?.text || title !== noteToEdit?.title || files.length !== (noteToEdit?.files?.length || 0)) {
+        if (text !== noteToEdit?.text || title !== noteToEdit?.title || files.length !== (noteToEdit?.files?.length || 0) || tasks.length !== (noteToEdit?.tasks?.length || 0)) {
             setShowSaveModal(true);
         } else {
             setTitle('');
             setText('');
             setFiles([]);
             setTasks([]);
+            setSelectedImages([]);
             navigation.goBack();
         }
     };
@@ -223,7 +247,7 @@ const NoteView = ({ navigation, route }) => {
         }
     }
 
-    const [selectedImages, setSelectedImages] = useState([]);
+
     const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
     const addPhoto = async () => {
@@ -247,13 +271,13 @@ const NoteView = ({ navigation, route }) => {
             backgroundColor: '#fff',
         },
         scrollViewContent: {
-
+            paddingBottom: 50,
         },
     });
 
     return (
-        <SafeAreaView className=" h-full pt-9 bg-white">
-            <PanGestureHandler onGestureEvent={handleSwipe}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaView className=" h-full pt-9 bg-white">
                 <View className="flex-1">
                     <View className="flex-row items-center">
                         <TouchableOpacity className="mx-2" onPress={handleBackPress}>
@@ -263,6 +287,7 @@ const NoteView = ({ navigation, route }) => {
                             />
                         </TouchableOpacity>
                         <TextInput
+                            scrollEnabled={true}
                             className="p-2 mt-2 bg-white text-xl font-bold w-2/3"
                             placeholder='New Note'
                             onChangeText={(title) => setTitle(title)}
@@ -276,7 +301,7 @@ const NoteView = ({ navigation, route }) => {
                             />
                         </TouchableOpacity>
                     </View>
-                    <ScrollView contentContainerStyle={styles.scrollViewContent}>
+                    <ScrollView className='flex-1 mb-4' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
                         <TextInput
                             className="p-2 mt-2 mx-2 bg-white"
                             placeholder='Enter your note...'
@@ -285,7 +310,7 @@ const NoteView = ({ navigation, route }) => {
                             multiline={true}
                         />
 
-                        <View className="px-3">
+                        {/* <View className="px-3">
                             {files.map((file, index) => (
                                 <View key={index}>
                                     <TouchableOpacity className="w-1/2 mb-1"
@@ -304,11 +329,12 @@ const NoteView = ({ navigation, route }) => {
                                     )}
                                 </View>
                             ))}
-                        </View>
+                        </View> */}
 
                         <View className='pt-4 px-3 w-full'>
                             {selectedImages.map((uri, index) => (
                                 <Image
+                                    onLongPress={() => deleteImage(index)}
                                     key={index}
                                     source={{ uri }}
                                     style={{
@@ -320,25 +346,30 @@ const NoteView = ({ navigation, route }) => {
                                 />
                             ))}
                         </View>
-                        <FlatList
-                            nestedScrollEnabled={true}
-                            data={tasks}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
-                                <View className="flex-row items-center px-3">
-                                    <Checkbox
-                                        value={item.checked}
-                                        onValueChange={() => toggleCheckbox(item.id)}
-                                    />
-                                    <TextInput
-                                        className="ml-2 border-b border-gray-300 flex-1"
-                                        placeholder="Enter task"
-                                        value={item.text}
-                                        onChangeText={(text) => updateTask(item.id, text)}
-                                    />
-                                </View>
-                            )}
-                        />
+                        {tasks.map((task) => (
+                            <View key={task.id} className="flex flex-row items-center gap-3 p-2 bg-white rounded-lg shadow">
+                                {/* Чекбокс */}
+                                <Pressable
+                                    onPress={() => toggleCheckbox(task.id)}
+                                    className="w-6 h-6 flex items-center justify-center border border-gray-400 rounded"
+                                >
+                                    <Text className={task.checked ? 'text-green-600 text-lg' : 'text-gray-500 text-lg'}>
+                                        {task.checked ? '✔' : ''}
+                                    </Text>
+                                </Pressable>
+
+                                {/* Инпут */}
+                                <TextInput
+                                    multiline={true}
+                                    textAlignVertical="top"
+                                    value={task.text}
+                                    onChangeText={(text) => updateTask(task.id, text)}
+                                    placeholder="Enter your task"
+                                    className="flex-1 m-1 border-b border-gray-300 bg-white rounded-lg "
+                                />
+                            </View>
+                        ))}
+
                     </ScrollView>
                     <Modal
                         animationType="slide"
@@ -536,8 +567,8 @@ const NoteView = ({ navigation, route }) => {
                     />
                 </View>
 
-            </PanGestureHandler>
-        </SafeAreaView >
+            </SafeAreaView >
+        </GestureHandlerRootView>
     );
 };
 

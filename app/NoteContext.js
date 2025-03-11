@@ -10,7 +10,8 @@ export const NoteProvider = ({ children }) => {
             id: Date.now().toString(), 
             title: note.title, 
             text: note.text, 
-            files: note.files 
+            files: note.files,
+            tasks: note.tasks, 
         };
         setNotes((prevNotes) => [newNote, ...prevNotes]);
     };
