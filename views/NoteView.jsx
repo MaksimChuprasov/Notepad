@@ -22,6 +22,7 @@ const NoteView = ({ navigation, route }) => {
     const [fileUri, setFileUri] = useState('');
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [deleteImageModal, setDeleteImageModal] = useState(false);
+    const [collabModal, setCollabModal] = useState(false);
     const [imageToDeleteIndex, setImageToDeleteIndex] = useState(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
@@ -61,6 +62,10 @@ const NoteView = ({ navigation, route }) => {
 
     const toggleModal = () => {
         setModalVisible(!isModalVisible);
+    };
+
+    const toggleCollabModal = () => {
+        setCollabModal(!collabModal);
     };
 
     const toggleImage = () => {
@@ -434,10 +439,10 @@ const NoteView = ({ navigation, route }) => {
 
                     </ScrollView>
 
-                    <View className="bg-white py-2 px-6 absolute bottom-0 left-0 w-full">
+                    <View className="bg-[#F7F7F7] py-2 px-6 absolute bottom-0 left-0 w-full">
                         <View className="flex-row justify-between">
                             {/* Первая кнопка */}
-                            <View className="bg-white items-center w-12">
+                            <View className="items-center w-12">
                                 {editingFileIndex !== -1 && (
                                     <TouchableOpacity
                                         className="flex items-center rounded-xl"
@@ -467,7 +472,7 @@ const NoteView = ({ navigation, route }) => {
 
                             {/* Вторая кнопка */}
                             <TouchableOpacity
-                                className="bg-white items-center"
+                                className="items-center"
                                 onPress={toggleModal}
                             >
                                 <Image
@@ -487,7 +492,7 @@ const NoteView = ({ navigation, route }) => {
                                     <View className="flex-1">
                                         {/* модальное окно */}
                                         <View
-                                            className="absolute bottom-[75px] left-16 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
+                                            className="absolute bottom-[75px] left-20 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
                                         >
                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
@@ -523,7 +528,7 @@ const NoteView = ({ navigation, route }) => {
                                                         source={require('../images/microphone.png')}
                                                         className="w-5 h-5 mr-2"
                                                     />
-                                                    <Text>Add Voise Message</Text>
+                                                    <Text>Add Voice Message</Text>
                                                 </View>
                                             </TouchableOpacity>
                                             <TouchableOpacity
@@ -545,7 +550,7 @@ const NoteView = ({ navigation, route }) => {
 
 
                             {/* Третья кнопка */}
-                            <TouchableOpacity
+                            {/* <TouchableOpacity
                                 className="bg-white items-center"
                             >
                                 <Image
@@ -553,18 +558,109 @@ const NoteView = ({ navigation, route }) => {
                                     className="w-8 h-8"
                                 />
                                 <Text className="text-[12px]">Formate text</Text>
-                            </TouchableOpacity>
+                            </TouchableOpacity> */}
 
                             {/* Четвертая кнопка*/}
                             <TouchableOpacity
-                                className="bg-white items-center"
+                                onPress={toggleCollabModal}
+                                className="items-center"
                             >
                                 <Image
                                     source={require('../images/collaborator.png')}
                                     className="w-8 h-8"
                                 />
-                                <Text className="text-[12px]">Collabolator</Text>
+                                <Text className="text-[12px]">Collaborator</Text>
                             </TouchableOpacity>
+                            <Modal
+                                animationType="none"
+                                transparent={true}
+                                visible={collabModal}
+                                onRequestClose={toggleCollabModal}
+                            >
+                                <TouchableWithoutFeedback onPress={toggleCollabModal}>
+                                    <View className="flex-1">
+                                        {/* модальное окно */}
+                                        <View
+                                            className="absolute bottom-[75px] right-2 left-2 rounded-xl px-2 bg-gray-200 items-left shadow-lg max-h-40"
+                                        >
+                                            <TextInput
+                                                className="border border-[#ddd] bg-white rounded-md mt-1 p-2 flex-1 h-12"
+                                                placeholder="Search your collaborator..."
+                                            />
+                                            <ScrollView>
+                                                <TouchableOpacity
+                                                    className="py-2 border-b border-gray-300"
+                                                >
+                                                    <View className="flex-row">
+                                                        <Image
+                                                            source={require('../images/collaborator.png')}
+                                                            className="w-5 h-5 mr-2"
+                                                        />
+                                                        <Text>Max</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    className="py-2 border-b border-gray-300"
+                                                >
+                                                    <View className="flex-row">
+                                                        <Image
+                                                            source={require('../images/collaborator.png')}
+                                                            className="w-5 h-5 mr-2"
+                                                        />
+                                                        <Text>Max</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    className="py-2 border-b border-gray-300"
+                                                >
+                                                    <View className="flex-row">
+                                                        <Image
+                                                            source={require('../images/collaborator.png')}
+                                                            className="w-5 h-5 mr-2"
+                                                        />
+                                                        <Text>Max</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    className="py-2 border-b border-gray-300"
+                                                >
+                                                    <View className="flex-row">
+                                                        <Image
+                                                            source={require('../images/collaborator.png')}
+                                                            className="w-5 h-5 mr-2"
+                                                        />
+                                                        <Text>Max</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    className="py-2 border-b border-gray-300"
+                                                >
+                                                    <View className="flex-row">
+                                                        <Image
+                                                            source={require('../images/collaborator.png')}
+                                                            className="w-5 h-5 mr-2"
+                                                        />
+                                                        <Text>Max</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    className="py-2 border-gray-300"
+                                                >
+                                                    <View className="flex-row">
+                                                        <Image
+                                                            source={require('../images/collaborator.png')}
+                                                            className="w-5 h-5 mr-2"
+                                                        />
+                                                        <Text>MaxCh</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            </ScrollView>
+                                        </View>
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            </Modal>
                         </View>
                     </View>
 
