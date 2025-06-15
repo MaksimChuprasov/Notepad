@@ -3,7 +3,7 @@
     "name": "Notepad",
     "slug": "Notepad",
     "version": "1.0.0",
-    "scheme": "Notepad",
+    "scheme": "notepad",
     "orientation": "portrait",
     "icon": "./images/logo.png",
     "userInterfaceStyle": "automatic",

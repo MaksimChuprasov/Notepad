@@ -7,23 +7,41 @@ const SaveModal = ({ visible, onSave, onClose, onExit }) => {
             transparent={true}
             visible={visible}
             onRequestClose={onClose}
-            animationType='slide'
+            animationType='none'
         >
             <TouchableWithoutFeedback onPress={onClose}>
-                <View className="h-full w-full">
+                <View className="flex-1 bg-black/60 justify-center items-center">
                     <TouchableWithoutFeedback>
-                        <View className="absolute mt-[250px] ml-[85px] rounded-xl p-2 w-1/2 bg-gray-200 items-center">
-                            <View>
-                                <Text className="text-lg mb-1">Save this note?</Text>
-                            </View>
-                            <View className="flex ">
-                                <TouchableOpacity className="border-t min-w-full items-center pb-1 p-1" onPress={onSave}>
-                                    <Text className="text-lg text-green-700">Save</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity className="border-t items-center p-1" onPress={onExit}>
-                                    <Text className="text-lg">Cancel</Text>
-                                </TouchableOpacity>
-                            </View>
+                        <View
+                            className="w-[65%] rounded-2xl p-5 items-center bg-gray-200"
+                            style={{
+                                backgroundColor: '#f0f0f0',
+                                borderWidth: 2,
+                                borderColor: 'rgba(100, 120, 180, 0.3)',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 8,
+                                elevation: 10,
+                            }}
+                        >
+                            <Text className="text-xl font-semibold text-gray-800 mb-3">
+                                Save this note?
+                            </Text>
+
+                            <TouchableOpacity
+                                className="w-full border-t border-gray-300 pt-2 mb-1 items-center"
+                                onPress={onSave}
+                            >
+                                <Text className="text-lg text-green-700">Save</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                className="w-full border-t border-gray-300 pt-2 items-center"
+                                onPress={onExit}
+                            >
+                                <Text className="text-lg text-gray-700">Cancel</Text>
+                            </TouchableOpacity>
                         </View>
                     </TouchableWithoutFeedback>
                 </View>

@@ -21,6 +21,8 @@ const NoteView = ({ navigation, route }) => {
     const [editedFileContent, setEditedFileContent] = useState('');
     const [fileUri, setFileUri] = useState('');
     const [showSaveModal, setShowSaveModal] = useState(false);
+    const [deleteImageModal, setDeleteImageModal] = useState(false);
+    const [imageToDeleteIndex, setImageToDeleteIndex] = useState(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
@@ -77,6 +79,7 @@ const NoteView = ({ navigation, route }) => {
             setText(route.params.noteToEdit.text || '');
             setFiles(route.params.noteToEdit.files || []);
             setTasks(route.params.noteToEdit?.tasks ?? []);
+            setShowSaveModal(false);
 
             setSelectedImages(initialNoteToEdit.files?.map(file => file.uri) || []);
         }
@@ -104,6 +107,7 @@ const NoteView = ({ navigation, route }) => {
         setFiles([]);
         setTasks([]);
         setSelectedImages([]);
+        setShowSaveModal(false);
 
         navigation.goBack();
     };
@@ -192,8 +196,20 @@ const NoteView = ({ navigation, route }) => {
         setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
     };
 
-    const deleteImage = (index) => {
-        setSelectedImages((prevImage) => prevImage.filter((_, i) => i !== index));
+    const confirmDeleteImage = (index) => {
+        setImageToDeleteIndex(index);
+        setDeleteImageModal(true);
+    };
+
+    const handleConfirmDelete = () => {
+        setSelectedImages((prev) => prev.filter((_, i) => i !== imageToDeleteIndex));
+        setDeleteImageModal(false);
+        setImageToDeleteIndex(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteImageModal(false);
+        setImageToDeleteIndex(null);
     };
 
     const handleExitWithoutSaving = () => {
@@ -246,9 +262,6 @@ const NoteView = ({ navigation, route }) => {
             handleBackPress();
         }
     }
-
-
-    const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
     const addPhoto = async () => {
         try {
@@ -331,21 +344,70 @@ const NoteView = ({ navigation, route }) => {
                             ))}
                         </View> */}
 
-                        <View className='pt-4 px-3 w-full'>
+                        <View className="pt-4 px-3 w-full">
                             {selectedImages.map((uri, index) => (
-                                <Image
-                                    onLongPress={() => deleteImage(index)}
+                                <TouchableOpacity
                                     key={index}
-                                    source={{ uri }}
-                                    style={{
-                                        width: 300,
-                                        height: 400,
-                                        borderRadius: 8,
-                                        marginBottom: 12,
-                                    }}
-                                />
+                                    onLongPress={() => confirmDeleteImage(index)}
+                                    delayLongPress={300}
+                                    activeOpacity={0.8}
+                                >
+                                    <Image
+                                        source={{ uri }}
+                                        style={{
+                                            width: 300,
+                                            height: 400,
+                                            borderRadius: 8,
+                                            marginBottom: 12,
+                                        }}
+                                    />
+                                </TouchableOpacity>
                             ))}
                         </View>
+                        <Modal
+                            transparent={true}
+                            visible={deleteImageModal}
+                            onRequestClose={handleCancelDelete}
+                            animationType="none"
+                        >
+                            <TouchableWithoutFeedback onPress={handleCancelDelete}>
+                                <View className="flex-1 bg-black/60 justify-center items-center">
+                                    <TouchableWithoutFeedback>
+                                        <View
+                                            className="w-[65%] rounded-2xl p-5 items-center bg-gray-200"
+                                            style={{
+                                                backgroundColor: '#f0f0f0',
+                                                borderWidth: 2,
+                                                borderColor: 'rgba(100, 120, 180, 0.3)',
+                                                shadowColor: '#000',
+                                                shadowOffset: { width: 0, height: 4 },
+                                                shadowOpacity: 0.3,
+                                                shadowRadius: 8,
+                                                elevation: 10,
+                                            }}
+                                        >
+                                            <Text className="text-xl font-semibold text-gray-800 mb-3">
+                                                Delete this image?
+                                            </Text>
+
+                                            <TouchableOpacity
+                                                className="w-full border-t border-gray-300 pt-2 mb-1 items-center"
+                                                onPress={handleConfirmDelete}
+                                            >
+                                                <Text className="text-lg text-red-600">Yes, delete</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                className="w-full border-t border-gray-300 pt-2 items-center"
+                                                onPress={handleCancelDelete}
+                                            >
+                                                <Text className="text-lg text-gray-700">Cancel</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableWithoutFeedback>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
                         {tasks.map((task) => (
                             <View key={task.id} className="flex flex-row items-center gap-3 p-2 bg-white rounded-lg shadow">
                                 {/* Чекбокс */}
@@ -371,59 +433,6 @@ const NoteView = ({ navigation, route }) => {
                         ))}
 
                     </ScrollView>
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={isImageModalVisible}
-                        onRequestClose={() => setIsImageModalVisible(false)}
-                    >
-                        <View
-                            style={{
-                                flex: 1,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            }}
-                        >
-                            <View
-                                style={{
-                                    width: '80%',
-                                    backgroundColor: 'white',
-                                    borderRadius: 8,
-                                    padding: 16,
-                                }}
-                            >
-                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
-                                    Choose an Option
-                                </Text>
-
-                                <TouchableOpacity
-                                    style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'gray' }}
-                                    onPress={() => addPhoto(false)} // Для галереи
-                                >
-                                    <Text style={{ fontSize: 16 }}>Choose from Gallery</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'gray' }}
-                                    onPress={() => addPhoto(true)} // Для камеры
-                                >
-                                    <Text style={{ fontSize: 16 }}>Take a Photo</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={{
-                                        padding: 12,
-                                        marginTop: 8,
-                                        alignItems: 'center',
-                                    }}
-                                    onPress={() => setIsImageModalVisible(false)}
-                                >
-                                    <Text style={{ fontSize: 16, color: '#007AFF' }}>Cancel</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Modal>
 
                     <View className="bg-white py-2 px-6 absolute bottom-0 left-0 w-full">
                         <View className="flex-row justify-between">

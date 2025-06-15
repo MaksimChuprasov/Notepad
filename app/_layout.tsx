@@ -1,5 +1,4 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
@@ -8,7 +7,11 @@ import LogIn from "../views/LogIn";
 import NoteView from "../views/NoteView";
 import ProfileView from "../views/ProfileView";
 import { NoteProvider } from "./NoteContext";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  NavigationContainer,
+  NavigationIndependentTree,
+} from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 
@@ -46,12 +49,12 @@ const MainTabNavigator = () => {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer independent>
+    <NavigationIndependentTree>
+      <NavigationContainer>
         <NoteProvider>
           <MainTabNavigator />
         </NoteProvider>
       </NavigationContainer>
-    </GestureHandlerRootView>
+    </NavigationIndependentTree>
   );
 }
