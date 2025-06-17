@@ -33,6 +33,19 @@ const NoteView = ({ navigation, route }) => {
 
     const [tasks, setTasks] = useState([]); // Храним список задач
 
+    const [searchCollaborator, setSearchCollaborator] = useState('');
+
+    const collaborators = [
+        { id: 1, name: 'Max' },
+        { id: 2, name: 'MaxCh' },
+        { id: 3, name: 'Alice' },
+        { id: 4, name: 'Bob' },
+    ];
+
+    const filteredCollaborators = collaborators.filter(collab =>
+        collab.name.toLowerCase().includes(searchCollaborator.toLowerCase())
+    );
+
 
     // Функция добавления новой задачи
     const addTask = () => {
@@ -584,78 +597,41 @@ const NoteView = ({ navigation, route }) => {
                                             className="absolute bottom-[75px] right-2 left-2 rounded-xl px-2 bg-gray-200 items-left shadow-lg max-h-40"
                                         >
                                             <TextInput
-                                                className="border border-[#ddd] bg-white rounded-md mt-1 p-2 flex-1 h-12"
+                                                value={searchCollaborator}
+                                                onChangeText={setSearchCollaborator}
+                                                className="border border-[#ddd] bg-white rounded-md mt-1 p-2 flex-1 h-10 max-h-10"
                                                 placeholder="Search your collaborator..."
                                             />
+
                                             <ScrollView>
-                                                <TouchableOpacity
-                                                    className="py-2 border-b border-gray-300"
-                                                >
-                                                    <View className="flex-row">
-                                                        <Image
-                                                            source={require('../images/collaborator.png')}
-                                                            className="w-5 h-5 mr-2"
-                                                        />
-                                                        <Text>Max</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    className="py-2 border-b border-gray-300"
-                                                >
-                                                    <View className="flex-row">
-                                                        <Image
-                                                            source={require('../images/collaborator.png')}
-                                                            className="w-5 h-5 mr-2"
-                                                        />
-                                                        <Text>Max</Text>
-                                                    </View>
-                                                </TouchableOpacity>
+                                                {filteredCollaborators.map((collab, index) => {
+                                                    const isLast = index === filteredCollaborators.length - 1;
 
-                                                <TouchableOpacity
-                                                    className="py-2 border-b border-gray-300"
-                                                >
-                                                    <View className="flex-row">
-                                                        <Image
-                                                            source={require('../images/collaborator.png')}
-                                                            className="w-5 h-5 mr-2"
-                                                        />
-                                                        <Text>Max</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    className="py-2 border-b border-gray-300"
-                                                >
-                                                    <View className="flex-row">
-                                                        <Image
-                                                            source={require('../images/collaborator.png')}
-                                                            className="w-5 h-5 mr-2"
-                                                        />
-                                                        <Text>Max</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    className="py-2 border-b border-gray-300"
-                                                >
-                                                    <View className="flex-row">
-                                                        <Image
-                                                            source={require('../images/collaborator.png')}
-                                                            className="w-5 h-5 mr-2"
-                                                        />
-                                                        <Text>Max</Text>
-                                                    </View>
-                                                </TouchableOpacity>
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={collab.id}
+                                                            className={`py-2 ${!isLast ? 'border-b border-gray-300' : ''}`}
+                                                            onPress={() => {
+                                                                // Действие при выборе
+                                                                console.log('Выбран:', collab.name);
+                                                            }}
+                                                        >
+                                                            <View className="flex-row">
+                                                                <Image
+                                                                    source={require('../images/collaborator.png')}
+                                                                    className="w-5 h-5 mr-2"
+                                                                />
+                                                                <Text>{collab.name}</Text>
+                                                            </View>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
 
-                                                <TouchableOpacity
-                                                    className="py-2 border-gray-300"
-                                                >
-                                                    <View className="flex-row">
-                                                        <Image
-                                                            source={require('../images/collaborator.png')}
-                                                            className="w-5 h-5 mr-2"
-                                                        />
-                                                        <Text>MaxCh</Text>
+                                                {filteredCollaborators.length === 0 && (
+                                                    <View className="p-4 items-center">
+                                                        <Text className="text-gray-500">No collaborators found</Text>
                                                     </View>
-                                                </TouchableOpacity>
+                                                )}
                                             </ScrollView>
                                         </View>
                                     </View>
@@ -673,7 +649,7 @@ const NoteView = ({ navigation, route }) => {
                 </View>
 
             </SafeAreaView >
-        </GestureHandlerRootView>
+        </GestureHandlerRootView >
     );
 };
 
