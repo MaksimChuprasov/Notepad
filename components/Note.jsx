@@ -2,40 +2,58 @@ import { View, Text } from 'react-native';
 import React from 'react';
 import { format } from 'date-fns';
 
-const Note = ({ note, style }) => {
-    const creationDate = note?.createdAt ? new Date(note.createdAt) : new Date();
-    const formattedDate = format(creationDate, 'dd.MM.yyyy HH:mm');
-
+const Note = ({ note, formattedDate, isSelected }) => {
     return (
-        <View style={style} className="w-[165px] mr-3 mb-3 p-3 bg-white rounded-3xl border border-[#e8e8e8]">
-            {/* Заголовок заметки */}
+        <View
+            className={`
+        flex-1
+        bg-white
+        rounded-3xl
+        p-4
+        mb-4
+        border
+        ${isSelected ? 'border-purple-600' : 'border-gray-300'}
+        ${isSelected ? 'bg-purple-50' : 'bg-white'}`}
+            style={{
+                minHeight: 160,
+            }}
+        >
+            {/* Заголовок */}
             {note?.title && (
-                <View className="flex-row justify-between items-center pb-1 mb-1 border-b border-[#e8e8e8]">
-                    <View className="flex-row items-center">
-                        <Text className="text-lg font-bold">{note.title}</Text>
-                    </View>
-                </View>
-            )}
-            {/* Контент заметки */}
-            <View className="mb-2">
-                <Text className="text-sm text-gray-600" numberOfLines={3} ellipsizeMode="tail">
-                    {note?.text}
+                <Text
+                    className="text-lg font-bold mb-2 text-gray-900"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                >
+                    {note.title}
                 </Text>
-            </View>
+            )}
 
-            {/* Футер заметки */}
-            <View className="flex-row justify-between items-center text-gray-400">
-                <View className="flex-row items-center">
+            {/* Основной текст */}
+            <Text
+                className="text-gray-600 text-sm mb-3 flex-grow"
+                numberOfLines={4}
+                ellipsizeMode="tail"
+            >
+                {note?.text || 'Пустая заметка'}
+            </Text>
+
+            {/* Файлы и дата */}
+            <View className="flex-row justify-between items-center border-t border-gray-200 pt-2">
+                <View>
                     {note?.files && note.files.length > 0 && (
-                        <View className="mb-2">
-                            <View className="p-1 border-t border-[#e8e8e8]">
-                                <Text numberOfLines={2} ellipsizeMode="tail">{note.files[0].name}</Text>
-                            </View>
-                        </View>
+                        <Text
+                            className="text-xs text-gray-500 max-w-[140px]"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                        >
+                            📎 {note.files[0].name}
+                        </Text>
                     )}
                 </View>
+
+                <Text className="text-xs text-gray-400">{formattedDate}</Text>
             </View>
-            <Text className="text-xs absolute bottom-1 right-3">{formattedDate}</Text>
         </View>
     );
 };

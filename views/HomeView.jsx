@@ -87,6 +87,15 @@ const HomeView = ({ navigation }) => {
         }
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date)) return '';
+
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString(undefined, options);
+    };
+
     return (
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
             <StatusBar style="dark" />
@@ -113,27 +122,24 @@ const HomeView = ({ navigation }) => {
                             )}
                         </View>
                         <FlatList
-                            numColumns={2}
                             data={filteredNotes}
+                            numColumns={2}
                             keyExtractor={(item) => item.id}
-                            columnWrapperStyle={{ flex: 1 }}
+                            columnWrapperStyle="justify-between px-4 mb-4"
                             renderItem={({ item }) => (
                                 <Pressable
                                     onLongPress={() => handleLongPress(item)}
                                     onPress={() => handlePress(item)}
+                                    className="flex-1 mx-1"
                                 >
-                                    <View className="flex-1">
-                                        <Note
-                                            style={{
-                                                backgroundColor: selectedNotes.includes(item.id) ? '#e6e6e6' : 'white',
-                                                borderColor: selectedNotes.includes(item.id) ? '#8A2BE2' : '#d1d1d1',
-                                                borderWidth: selectedNotes.includes(item.id) ? 2 : 1
-                                            }}
-                                            note={item} // Передача данных
-                                        />
-                                    </View>
+                                    <Note
+                                        note={item}
+                                        isSelected={selectedNotes.includes(item.id)}
+                                    formattedDate={formatDate(item.date)} // твоя функция форматирования
+                                    />
                                 </Pressable>
                             )}
+                            showsVerticalScrollIndicator={false}
                         />
                     </View>
                 </View>
