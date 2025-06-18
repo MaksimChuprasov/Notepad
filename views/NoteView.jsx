@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import NoteContext from '../app/NoteContext';
@@ -29,8 +29,8 @@ const NoteView = ({ navigation, route }) => {
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
     const [Gptimage, setGptImage] = useState(require('../images/Chat_Gpt.png'));
-    const [directoryUri, setDirectoryUri] = useState('');
-    const [fileName, setFileName] = useState('');
+    const [isFilePickerVisible, setFilePickerVisible] = useState(false);
+    const [filteredFiles, setFilteredFiles] = useState([]);
 
     const [isModalVisible, setModalVisible] = useState(false);
 
@@ -98,20 +98,44 @@ const NoteView = ({ navigation, route }) => {
         if (route.params?.noteToEdit) {
             setTitle(route.params.noteToEdit.title || '');
             setText(route.params.noteToEdit.text || '');
-            setFiles(route.params.noteToEdit.files || []);
             setTasks(route.params.noteToEdit?.tasks ?? []);
             setShowSaveModal(false);
 
-            setSelectedImages(initialNoteToEdit.files?.map(file => file.uri) || []);
+            // Разделяем файлы и изображения
+            const allFiles = route.params.noteToEdit.files || [];
+
+            // Фильтруем изображения по расширению (или любому другому признаку)
+            const images = allFiles.filter(f => /\.(jpg|jpeg|png|gif|bmp)$/i.test(f.name));
+            const otherFiles = allFiles.filter(f => !images.includes(f));
+
+            setFiles(otherFiles);
+            setSelectedImages(images.map(img => img.uri));
         }
     }, [route.params]);
+
+    const getFileNameFromUri = (uri) => {
+        try {
+            const parts = uri.split('/');
+            return parts[parts.length - 1];
+        } catch {
+            return 'image.jpg';
+        }
+    };
 
     const saveNote = () => {
         const updatedNote = {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files: [...files, ...selectedImages.map(uri => ({ uri }))],
+            files: [
+                ...files,
+                ...selectedImages
+                    .filter(uri => !files.some(f => f.uri === uri)) // исключаем дубли
+                    .map(uri => ({
+                        uri,
+                        name: getFileNameFromUri(uri),
+                    })),
+            ],
             tasks,
         };
 
@@ -129,6 +153,7 @@ const NoteView = ({ navigation, route }) => {
         setTasks([]);
         setSelectedImages([]);
         setShowSaveModal(false);
+        setEditingFileIndex(-1);
 
         navigation.goBack();
     };
@@ -165,77 +190,55 @@ const NoteView = ({ navigation, route }) => {
         return true;
     };
 
+    const decodeFileNameFromUri = (uri) => {
+        try {
+            const parts = uri.split('document/');
+            if (parts.length < 2) return 'unknown';
+            const encodedPath = parts[1];
+            const decodedPath = decodeURIComponent(encodedPath);
+            const fileName = decodedPath.substring(decodedPath.lastIndexOf('/') + 1);
+            return fileName;
+        } catch {
+            return 'unknown';
+        }
+    };
+
     const selectFiles = async () => {
         try {
             const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
 
             if (!permission.granted) {
-                Alert.alert('Ошибка', 'Нет доступа к хранилищу');
                 return;
             }
 
             const dirUri = permission.directoryUri;
+            let filesList = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
 
-            // Читаем все файлы из директории
-            let files = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
+            const filtered = [];
+            for (const fileUriItem of filesList) {
+                const info = await FileSystem.getInfoAsync(fileUriItem);
+                if (!info.exists) continue;
 
-            // Фильтруем файлы: проверяем существование и исключаем "мусорные"
-            const filteredFiles = [];
-            for (const fileUri of files) {
-                const info = await FileSystem.getInfoAsync(fileUri);
+                const fileName = decodeFileNameFromUri(fileUriItem);
 
-                if (!info.exists) {
-                    // Файл не существует - пропускаем
-                    continue;
-                }
-
-                // Получаем имя файла
-                const parts = fileUri.split('/');
-                const fileName = parts[parts.length - 1];
-
-                // Исключаем временные/корзинные файлы по названию
                 if (
-                    fileName.startsWith('._') || // скрытые файлы macOS
-                    fileName.startsWith('.~') || // временные файлы
-                    fileName.toLowerCase().includes('trash') || // корзина (варианты)
-                    fileName.toLowerCase().includes('recycle') // корзина Windows
-                ) {
-                    continue;
-                }
+                    fileName.startsWith('._') ||
+                    fileName.startsWith('.~') ||
+                    fileName.toLowerCase().includes('trash') ||
+                    fileName.toLowerCase().includes('recycle')
+                ) continue;
 
-                filteredFiles.push({ uri: fileUri, name: fileName });
+                filtered.push({ uri: fileUriItem, name: fileName });
             }
 
-            if (filteredFiles.length === 0) {
-                Alert.alert('Ошибка', 'Файлы не найдены в директории');
+            if (filtered.length === 0) {
                 return;
             }
 
-            // Создаем кнопки для выбора файла (только имя)
-            Alert.alert(
-                'Выберите файл',
-                'Выберите файл для редактирования',
-                filteredFiles.map(({ name, uri }, index) => ({
-                    text: name,
-                    onPress: async () => {
-                        try {
-                            const content = await FileSystem.StorageAccessFramework.readAsStringAsync(uri);
-
-                            setFiles(prevFiles => [...prevFiles, { name, uri }]);
-                            setFileUri(uri);
-                            setEditedFileContent(content);
-                            setIsEditing(true);
-                            setSaveButtonLabel('Save File');
-                        } catch (err) {
-                            console.error('Ошибка при чтении файла:', err);
-                            Alert.alert('Ошибка', 'Не удалось прочитать файл');
-                        }
-                    },
-                }))
-            );
+            setFilteredFiles(filtered);
+            setFilePickerVisible(true);
         } catch (err) {
             console.error('Ошибка при выборе папки:', err);
-            Alert.alert('Ошибка', 'Не удалось получить доступ к папке');
         }
     };
 
@@ -246,8 +249,6 @@ const NoteView = ({ navigation, route }) => {
             await StorageAccessFramework.writeAsStringAsync(fileUri, editedFileContent, {
                 encoding: FileSystem.EncodingType.UTF8,
             });
-
-            Alert.alert("Успех", "Файл сохранён");
             setEditingFileIndex(-1);
             setIsEditing(false);
             setSaveButtonLabel('Save File');
@@ -259,9 +260,6 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const openFile = async (uri, index) => {
-        const granted = await requestStoragePermission();
-        if (!granted) return Alert.alert("Ошибка", "Нет доступа к хранилищу");
-
         try {
             const content = await StorageAccessFramework.readAsStringAsync(uri);
             setFileUri(uri);
@@ -270,7 +268,16 @@ const NoteView = ({ navigation, route }) => {
             setIsEditing(true);
             setSaveButtonLabel('Save Changes');
         } catch {
-            Alert.alert("Ошибка", "Не удалось открыть файл");
+            Alert.alert("Error", "Couldn`t open this file");
+        }
+    };
+
+    const handleFilePress = (index, uri) => {
+        if (editingFileIndex === index) {
+            setEditingFileIndex(-1);
+        } else {
+            openFile(uri, index);
+            setEditingFileIndex(index);
         }
     };
 
@@ -314,6 +321,7 @@ const NoteView = ({ navigation, route }) => {
         setFiles([]);
         setTasks([]);
         setSelectedImages([]);
+        setEditingFileIndex(-1);
 
         setTimeout(() => {
             navigation.goBack();
@@ -323,6 +331,7 @@ const NoteView = ({ navigation, route }) => {
         if (showSaveModal) {
             setShowSaveModal(false);
         }
+        setEditingFileIndex(null);
     };
 
     const handleBackPress = () => {
@@ -408,33 +417,71 @@ const NoteView = ({ navigation, route }) => {
                     </View>
                     <ScrollView className='flex-1 mb-4' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
                         <TextInput
-                            className="p-2 mt-2 mx-2 bg-white"
-                            placeholder='Enter your note...'
-                            onChangeText={(text) => setText(text)}
+                            className="p-4 my-2 mx-3 bg-gray-50 rounded-xl shadow-md text-gray-900 text-base"
+                            placeholder="Enter your note..."
+                            onChangeText={text => setText(text)}
                             value={text}
                             multiline={true}
+                            textAlignVertical="top"
                         />
 
-                        <View className="px-3">
+                        <View className="px-3 mb-2">
                             {files.map((file, index) => (
-                                <View key={index}>
-                                    <TouchableOpacity className="w-1/2 mb-1"
-                                        onPress={() => openFile(file.uri, index)}
+                                <View
+                                    key={index}
+                                    className="mb-2 bg-white rounded-xl shadow-md p-4 border border-gray-200"
+                                >
+                                    <TouchableOpacity
+                                        className="flex-row items-center justify-between"
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            handleFilePress(index, file.uri);
+                                        }}
                                         onLongPress={() => deleteFile(index)}
                                     >
-                                        <Text className="text-blue-600">{file.name}</Text>
+                                        <Text className="text-blue-600 font-semibold text-base truncate max-w-[70%]">
+                                            {file.name}
+                                        </Text>
+                                        <Text className="text-gray-400 text-sm italic">Tap to open</Text>
                                     </TouchableOpacity>
+
                                     {editingFileIndex === index && (
-                                        <TextInput className="border p-2 rounded-lg"
+                                        <TextInput
+                                            className="mt-3 border border-blue-200 rounded-lg p-3 text-gray-700 bg-[#F7F7F7]"
                                             onChangeText={(content) => setEditedFileContent(content)}
-                                            placeholder='Change your file...'
+                                            placeholder="Change your file..."
                                             value={editedFileContent}
                                             multiline={true}
+                                            textAlignVertical="top"
                                         />
                                     )}
                                 </View>
                             ))}
                         </View>
+
+                        {tasks.map((task) => (
+                            <View key={task.id} className="flex flex-row items-center gap-3 p-2 bg-white rounded-lg shadow">
+                                {/* Чекбокс */}
+                                <Pressable
+                                    onPress={() => toggleCheckbox(task.id)}
+                                    className="w-6 h-6 flex items-center justify-center border border-gray-400 rounded"
+                                >
+                                    <Text className={task.checked ? 'text-green-600 text-lg' : 'text-gray-500 text-lg'}>
+                                        {task.checked ? '✔' : ''}
+                                    </Text>
+                                </Pressable>
+
+                                {/* Инпут */}
+                                <TextInput
+                                    multiline={true}
+                                    textAlignVertical="top"
+                                    value={task.text}
+                                    onChangeText={(text) => updateTask(task.id, text)}
+                                    placeholder="Enter your task"
+                                    className="flex-1 m-1 border-b border-gray-300 bg-white rounded-lg "
+                                />
+                            </View>
+                        ))}
 
                         <View className="pt-4 px-3 w-full">
                             {selectedImages.map((uri, index) => (
@@ -500,29 +547,7 @@ const NoteView = ({ navigation, route }) => {
                                 </View>
                             </TouchableWithoutFeedback>
                         </Modal>
-                        {tasks.map((task) => (
-                            <View key={task.id} className="flex flex-row items-center gap-3 p-2 bg-white rounded-lg shadow">
-                                {/* Чекбокс */}
-                                <Pressable
-                                    onPress={() => toggleCheckbox(task.id)}
-                                    className="w-6 h-6 flex items-center justify-center border border-gray-400 rounded"
-                                >
-                                    <Text className={task.checked ? 'text-green-600 text-lg' : 'text-gray-500 text-lg'}>
-                                        {task.checked ? '✔' : ''}
-                                    </Text>
-                                </Pressable>
 
-                                {/* Инпут */}
-                                <TextInput
-                                    multiline={true}
-                                    textAlignVertical="top"
-                                    value={task.text}
-                                    onChangeText={(text) => updateTask(task.id, text)}
-                                    placeholder="Enter your task"
-                                    className="flex-1 m-1 border-b border-gray-300 bg-white rounded-lg "
-                                />
-                            </View>
-                        ))}
 
                     </ScrollView>
 
@@ -720,6 +745,58 @@ const NoteView = ({ navigation, route }) => {
                         onSave={saveNote}
                         onClose={handleOutsidePress}
                     />
+                    <Modal
+                        visible={isFilePickerVisible}
+                        animationType="slide"
+                        transparent={true}
+                        onRequestClose={() => setFilePickerVisible(false)}
+                    >
+                        <View className="flex-1 bg-black bg-opacity-60 justify-center px-6">
+                            <View className="bg-white rounded-xl max-h-[80%] p-6 shadow-lg">
+                                <Text className="text-xl font-semibold mb-5 text-center text-gray-800">
+                                    Choose your file
+                                </Text>
+
+                                <FlatList
+                                    data={filteredFiles}
+                                    keyExtractor={(item) => item.uri}
+                                    className="mb-4"
+                                    contentContainerStyle={{ paddingBottom: 20 }}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            onPress={async () => {
+                                                try {
+                                                    const content = await FileSystem.StorageAccessFramework.readAsStringAsync(item.uri);
+                                                    setFiles(prev => [...prev, { name: item.name, uri: item.uri }]);
+                                                    setFileUri(item.uri);
+                                                    setEditedFileContent(content);
+                                                    setIsEditing(true);
+                                                    setSaveButtonLabel('Save File');
+                                                    setFilePickerVisible(false);
+                                                } catch (err) {
+                                                    console.error('Ошибка при чтении файла:', err);
+                                                    Alert.alert('Ошибка', 'Не удалось прочитать файл');
+                                                }
+                                            }}
+                                            className="py-3 border-b border-gray-300"
+                                        >
+                                            <Text className="text-base text-gray-700">{item.name}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    showsVerticalScrollIndicator={false}
+                                />
+
+                                <TouchableOpacity
+                                    onPress={() => setFilePickerVisible(false)}
+                                    activeOpacity={0.8}
+                                    className="bg-blue-600 rounded-lg py-3"
+                                >
+                                    <Text className="text-white font-semibold text-center text-lg">Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
+
                 </View>
 
             </SafeAreaView >
