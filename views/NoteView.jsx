@@ -8,9 +8,9 @@ import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-
 import * as ImagePicker from 'expo-image-picker';
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-const { StorageAccessFramework } = FileSystem;
 
 const NoteView = ({ navigation, route }) => {
+    const { StorageAccessFramework } = FileSystem;
     const { addNote, updateNote } = useContext(NoteContext);
     const { noteToEdit: initialNoteToEdit } = route.params || {};
     const { noteToEdit } = route.params || {};
@@ -29,6 +29,8 @@ const NoteView = ({ navigation, route }) => {
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
     const [Gptimage, setGptImage] = useState(require('../images/Chat_Gpt.png'));
+    const [directoryUri, setDirectoryUri] = useState('');
+    const [fileName, setFileName] = useState('');
 
     const [isModalVisible, setModalVisible] = useState(false);
 
@@ -162,80 +164,118 @@ const NoteView = ({ navigation, route }) => {
         }
         return true;
     };
+
     const selectFiles = async () => {
         try {
-            const res = await FileSystem.StorageAccessFramework.pickDocumentAsync({
-                types: ['text/plain'],
-            });
+            const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
 
-            if (!res.uri) {
-                console.log('Файл не выбран');
+            if (!permission.granted) {
+                Alert.alert('Ошибка', 'Нет доступа к хранилищу');
                 return;
             }
 
-            const content = await FileSystem.StorageAccessFramework.readAsStringAsync(res.uri, {
-                encoding: FileSystem.EncodingType.UTF8,
-            });
+            const dirUri = permission.directoryUri;
 
-            setFiles(prevFiles => [...prevFiles, { name: res.name || "Без имени", uri: res.uri }]);
-            setFileUri(res.uri);
-            setEditedFileContent(content);
-            setIsEditing(true);
-            setSaveButtonLabel('Save File');
+            // Читаем все файлы из директории
+            let files = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
 
+            // Фильтруем файлы: проверяем существование и исключаем "мусорные"
+            const filteredFiles = [];
+            for (const fileUri of files) {
+                const info = await FileSystem.getInfoAsync(fileUri);
+
+                if (!info.exists) {
+                    // Файл не существует - пропускаем
+                    continue;
+                }
+
+                // Получаем имя файла
+                const parts = fileUri.split('/');
+                const fileName = parts[parts.length - 1];
+
+                // Исключаем временные/корзинные файлы по названию
+                if (
+                    fileName.startsWith('._') || // скрытые файлы macOS
+                    fileName.startsWith('.~') || // временные файлы
+                    fileName.toLowerCase().includes('trash') || // корзина (варианты)
+                    fileName.toLowerCase().includes('recycle') // корзина Windows
+                ) {
+                    continue;
+                }
+
+                filteredFiles.push({ uri: fileUri, name: fileName });
+            }
+
+            if (filteredFiles.length === 0) {
+                Alert.alert('Ошибка', 'Файлы не найдены в директории');
+                return;
+            }
+
+            // Создаем кнопки для выбора файла (только имя)
+            Alert.alert(
+                'Выберите файл',
+                'Выберите файл для редактирования',
+                filteredFiles.map(({ name, uri }, index) => ({
+                    text: name,
+                    onPress: async () => {
+                        try {
+                            const content = await FileSystem.StorageAccessFramework.readAsStringAsync(uri);
+
+                            setFiles(prevFiles => [...prevFiles, { name, uri }]);
+                            setFileUri(uri);
+                            setEditedFileContent(content);
+                            setIsEditing(true);
+                            setSaveButtonLabel('Save File');
+                        } catch (err) {
+                            console.error('Ошибка при чтении файла:', err);
+                            Alert.alert('Ошибка', 'Не удалось прочитать файл');
+                        }
+                    },
+                }))
+            );
         } catch (err) {
-            console.error('Ошибка при выборе файла:', err);
-            Alert.alert("Ошибка", "Не удалось открыть файл.");
+            console.error('Ошибка при выборе папки:', err);
+            Alert.alert('Ошибка', 'Не удалось получить доступ к папке');
         }
     };
 
     const saveEditedFile = async () => {
-        if (fileUri && editedFileContent !== null) {
-            const permissionGranted = await requestStoragePermission();
-            if (!permissionGranted) {
-                Alert.alert("Разрешение не получено", "Невозможно сохранить файл без доступа к хранилищу.");
-                return;
-            }
+        if (!fileUri || !editedFileContent) return;
 
-            try {
-                await FileSystem.StorageAccessFramework.writeAsStringAsync(fileUri, editedFileContent, {
-                    encoding: FileSystem.EncodingType.UTF8,
-                });
-                console.log('Изменения сохранены в оригинальный файл');
-                setEditingFileIndex(-1);
-                setIsEditing(false);
-                setSaveButtonLabel('Save File');
-            } catch (err) {
-                console.error('Ошибка при сохранении файла:', err);
-                Alert.alert("Ошибка", "Не удалось сохранить файл. Возможно, файл находится вне доступа.");
-            }
+        try {
+            await StorageAccessFramework.writeAsStringAsync(fileUri, editedFileContent, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
+
+            Alert.alert("Успех", "Файл сохранён");
+            setEditingFileIndex(-1);
+            setIsEditing(false);
+            setSaveButtonLabel('Save File');
+            setFileUri('');
+            setEditedFileContent('');
+        } catch {
+            Alert.alert("Ошибка", "Не удалось сохранить файл");
         }
     };
 
-    const openFile = async (fileUri, index) => {
-        const permissionGranted = await requestStoragePermission();
-        if (!permissionGranted) {
-            Alert.alert("Разрешение не получено", "Невозможно открыть файл без доступа к хранилищу.");
-            return;
-        }
-
-        setEditingFileIndex(index);
-        setFileUri(fileUri);
-        setSaveButtonLabel('Save Changes');
-        setIsEditing(true);
-        setGptImage(Gptimage);
+    const openFile = async (uri, index) => {
+        const granted = await requestStoragePermission();
+        if (!granted) return Alert.alert("Ошибка", "Нет доступа к хранилищу");
 
         try {
-            const fileContent = await StorageAccessFramework.readAsStringAsync(fileUri);
-            setEditedFileContent(fileContent);
-        } catch (err) {
-            console.error('Ошибка при открытии файла:', err);
-            Alert.alert("Ошибка", "Не удалось открыть файл.");
+            const content = await StorageAccessFramework.readAsStringAsync(uri);
+            setFileUri(uri);
+            setEditedFileContent(content);
+            setEditingFileIndex(index);
+            setIsEditing(true);
+            setSaveButtonLabel('Save Changes');
+        } catch {
+            Alert.alert("Ошибка", "Не удалось открыть файл");
         }
     };
 
     const deleteFile = (index) => {
-        setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+        setFiles(prev => prev.filter((_, i) => i !== index));
 
         if (editingFileIndex === index) {
             setEditingFileIndex(-1);
@@ -244,7 +284,7 @@ const NoteView = ({ navigation, route }) => {
             setEditedFileContent('');
             setSaveButtonLabel('Save File');
         } else if (editingFileIndex > index) {
-            setEditingFileIndex((prev) => prev - 1);
+            setEditingFileIndex(prev => prev - 1);
         }
     };
 
