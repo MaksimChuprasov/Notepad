@@ -2,12 +2,13 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import NoteContext from '../app/NoteContext';
 import SaveModal from '../components/SaveModal'
 import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
-import Checkbox from 'expo-checkbox';
+import { PermissionsAndroid, Platform, Alert } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+const { StorageAccessFramework } = FileSystem;
 
 const NoteView = ({ navigation, route }) => {
     const { addNote, updateNote } = useContext(NoteContext);
@@ -147,71 +148,104 @@ const NoteView = ({ navigation, route }) => {
     }, [navigation, text, title, files, tasks, initialNoteToEdit]);
 
 
+    const requestStoragePermission = async () => {
+        if (Platform.OS === 'android' && Platform.Version >= 30) {
+            const granted = await PermissionsAndroid.requestMultiple([
+                PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            ]);
 
+            return (
+                granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED &&
+                granted['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
+            );
+        }
+        return true;
+    };
     const selectFiles = async () => {
         try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: ['*/*'],
-                multiple: true,
+            const res = await FileSystem.StorageAccessFramework.pickDocumentAsync({
+                types: ['text/plain'],
             });
 
-            if (result.canceled) {
-                console.log('File selection was cancelled');
-            } else {
-                const selectedFiles = result.assets || [];
-                setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+            if (!res.uri) {
+                console.log('Файл не выбран');
+                return;
             }
+
+            const content = await FileSystem.StorageAccessFramework.readAsStringAsync(res.uri, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
+
+            setFiles(prevFiles => [...prevFiles, { name: res.name || "Без имени", uri: res.uri }]);
+            setFileUri(res.uri);
+            setEditedFileContent(content);
+            setIsEditing(true);
+            setSaveButtonLabel('Save File');
+
         } catch (err) {
-            console.error('Error selecting files:', err);
+            console.error('Ошибка при выборе файла:', err);
+            Alert.alert("Ошибка", "Не удалось открыть файл.");
         }
     };
 
     const saveEditedFile = async () => {
-        if (fileUri) {
-            try {
-                const documentDirectory = FileSystem.documentDirectory;
-                const fileName = fileUri.split('/').pop();
-                const destinationUri = documentDirectory + fileName;
+        if (fileUri && editedFileContent !== null) {
+            const permissionGranted = await requestStoragePermission();
+            if (!permissionGranted) {
+                Alert.alert("Разрешение не получено", "Невозможно сохранить файл без доступа к хранилищу.");
+                return;
+            }
 
-                await FileSystem.writeAsStringAsync(destinationUri, editedFileContent, {
+            try {
+                await FileSystem.StorageAccessFramework.writeAsStringAsync(fileUri, editedFileContent, {
                     encoding: FileSystem.EncodingType.UTF8,
                 });
-
-                setFiles((prevFiles) =>
-                    prevFiles.map((file, index) =>
-                        index === editingFileIndex ? { ...file, uri: destinationUri } : file
-                    )
-                );
-
-                setIsEditing(false);
+                console.log('Изменения сохранены в оригинальный файл');
                 setEditingFileIndex(-1);
+                setIsEditing(false);
                 setSaveButtonLabel('Save File');
-                setFileUri('');
-                setEditedFileContent('');
             } catch (err) {
-                console.error('Error saving file:', err);
+                console.error('Ошибка при сохранении файла:', err);
+                Alert.alert("Ошибка", "Не удалось сохранить файл. Возможно, файл находится вне доступа.");
             }
         }
     };
 
     const openFile = async (fileUri, index) => {
+        const permissionGranted = await requestStoragePermission();
+        if (!permissionGranted) {
+            Alert.alert("Разрешение не получено", "Невозможно открыть файл без доступа к хранилищу.");
+            return;
+        }
+
         setEditingFileIndex(index);
         setFileUri(fileUri);
         setSaveButtonLabel('Save Changes');
         setIsEditing(true);
         setGptImage(Gptimage);
+
         try {
-            const fileContent = await FileSystem.readAsStringAsync(fileUri, {
-                encoding: FileSystem.EncodingType.UTF8,
-            });
+            const fileContent = await StorageAccessFramework.readAsStringAsync(fileUri);
             setEditedFileContent(fileContent);
         } catch (err) {
-            console.error('Error opening file:', err);
+            console.error('Ошибка при открытии файла:', err);
+            Alert.alert("Ошибка", "Не удалось открыть файл.");
         }
     };
 
     const deleteFile = (index) => {
         setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+
+        if (editingFileIndex === index) {
+            setEditingFileIndex(-1);
+            setIsEditing(false);
+            setFileUri('');
+            setEditedFileContent('');
+            setSaveButtonLabel('Save File');
+        } else if (editingFileIndex > index) {
+            setEditingFileIndex((prev) => prev - 1);
+        }
     };
 
     const confirmDeleteImage = (index) => {
@@ -341,7 +375,7 @@ const NoteView = ({ navigation, route }) => {
                             multiline={true}
                         />
 
-                        {/* <View className="px-3">
+                        <View className="px-3">
                             {files.map((file, index) => (
                                 <View key={index}>
                                     <TouchableOpacity className="w-1/2 mb-1"
@@ -360,7 +394,7 @@ const NoteView = ({ navigation, route }) => {
                                     )}
                                 </View>
                             ))}
-                        </View> */}
+                        </View>
 
                         <View className="pt-4 px-3 w-full">
                             {selectedImages.map((uri, index) => (

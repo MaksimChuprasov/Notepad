@@ -23,17 +23,34 @@ const ProfileView = () => {
             setIsLoggedIn(true);
         }
     };
+    const handleLogOut = () => {
+        setIsLoggedIn(false);
+    };
 
     return isLoggedIn ? (
         <SafeAreaView className="mt-16 px-5">
-            <View className='flex-row items-center'>
-                <Text className='font-bold text-3xl'>{name}</Text>
-                <Image
-                    source={require('../images/user.png')}
-                    className="w-10 h-10 ml-1"
-                />
+            <View className='flex-row justify-between items-start'>
+                <View>
+                    <View className='flex-row items-center w-3/4'>
+                        <Text className='font-bold text-3xl' numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+                        <Image
+                            source={require('../images/user.png')}
+                            className="w-10 h-10 ml-1"
+                        />
+                    </View>
+                    <Text className='text-lg text-gray-500 mt-[-10px]' numberOfLines={1} ellipsizeMode="tail">{email}</Text>
+                </View>
+                <TouchableOpacity
+                    onPress={handleLogOut}
+                    className="items-center"
+                >
+                    <Image
+                        source={require('../images/logout.png')}
+                        className="w-10 h-10"
+                    />
+                </TouchableOpacity>
             </View>
-            <Text className='text-lg text-gray-500 mt-[-10px]'>{email}</Text>
+
         </SafeAreaView>
     ) : (
         <KeyboardAvoidingView

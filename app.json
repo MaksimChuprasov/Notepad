@@ -18,8 +18,10 @@
       "package": "com.maksim_chuprasov.Notepad",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+        "WRITE_EXTERNAL_STORAGE",
+        "MANAGE_EXTERNAL_STORAGE"
+      ],
+      "requestLegacyExternalStorage": true
     },
     "web": {
       "bundler": "metro",
