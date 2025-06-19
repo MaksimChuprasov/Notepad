@@ -31,10 +31,12 @@ const NoteView = ({ navigation, route }) => {
     const [Gptimage, setGptImage] = useState(require('../images/Chat_Gpt.png'));
     const [isFilePickerVisible, setFilePickerVisible] = useState(false);
     const [filteredFiles, setFilteredFiles] = useState([]);
+    const [deleteFileModalVisible, setDeleteFileModalVisible] = useState(false);
+    const [fileToDeleteIndex, setFileToDeleteIndex] = useState(null);
 
     const [isModalVisible, setModalVisible] = useState(false);
 
-    const [tasks, setTasks] = useState([]); // Храним список задач
+    const [tasks, setTasks] = useState([]);
 
     const [searchCollaborator, setSearchCollaborator] = useState('');
 
@@ -94,22 +96,15 @@ const NoteView = ({ navigation, route }) => {
 
     const isFocused = useIsFocused();
 
+    // При загрузке заметки
     useEffect(() => {
         if (route.params?.noteToEdit) {
-            setTitle(route.params.noteToEdit.title || '');
-            setText(route.params.noteToEdit.text || '');
-            setTasks(route.params.noteToEdit?.tasks ?? []);
-            setShowSaveModal(false);
-
-            // Разделяем файлы и изображения
-            const allFiles = route.params.noteToEdit.files || [];
-
-            // Фильтруем изображения по расширению (или любому другому признаку)
-            const images = allFiles.filter(f => /\.(jpg|jpeg|png|gif|bmp)$/i.test(f.name));
-            const otherFiles = allFiles.filter(f => !images.includes(f));
-
-            setFiles(otherFiles);
-            setSelectedImages(images.map(img => img.uri));
+            const note = route.params.noteToEdit;
+            setTitle(note.title || '');
+            setText(note.text || '');
+            setTasks(note.tasks || []);
+            setFiles(note.files || []);
+            setSelectedImages((note.images || []).map(img => img.uri));
         }
     }, [route.params]);
 
@@ -127,19 +122,13 @@ const NoteView = ({ navigation, route }) => {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files: [
-                ...files,
-                ...selectedImages
-                    .filter(uri => !files.some(f => f.uri === uri)) // исключаем дубли
-                    .map(uri => ({
-                        uri,
-                        name: getFileNameFromUri(uri),
-                    })),
-            ],
+            files, // обычные файлы
             tasks,
+            images: selectedImages.map(uri => ({
+                uri,
+                name: getFileNameFromUri(uri),
+            })), // картинки — в отдельный массив
         };
-
-        console.log("Saving note:", updatedNote);
 
         if (initialNoteToEdit) {
             updateNote(updatedNote);
@@ -147,6 +136,7 @@ const NoteView = ({ navigation, route }) => {
             addNote(updatedNote);
         }
 
+        // Очистка стейтов
         setTitle('');
         setText('');
         setFiles([]);
@@ -154,7 +144,6 @@ const NoteView = ({ navigation, route }) => {
         setSelectedImages([]);
         setShowSaveModal(false);
         setEditingFileIndex(-1);
-
         navigation.goBack();
     };
 
@@ -173,22 +162,6 @@ const NoteView = ({ navigation, route }) => {
 
         return unsubscribe;
     }, [navigation, text, title, files, tasks, initialNoteToEdit]);
-
-
-    const requestStoragePermission = async () => {
-        if (Platform.OS === 'android' && Platform.Version >= 30) {
-            const granted = await PermissionsAndroid.requestMultiple([
-                PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-            ]);
-
-            return (
-                granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED &&
-                granted['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
-            );
-        }
-        return true;
-    };
 
     const decodeFileNameFromUri = (uri) => {
         try {
@@ -281,18 +254,31 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-    const deleteFile = (index) => {
-        setFiles(prev => prev.filter((_, i) => i !== index));
+    const requestFileDelete = (index) => {
+        setFileToDeleteIndex(index);
+        setDeleteFileModalVisible(true);
+    };
 
-        if (editingFileIndex === index) {
+    const cancelFileDelete = () => {
+        setDeleteFileModalVisible(false);
+        setFileToDeleteIndex(null);
+    };
+
+    const confirmFileDelete = () => {
+        setFiles((prev) => prev.filter((_, i) => i !== fileToDeleteIndex));
+
+        if (editingFileIndex === fileToDeleteIndex) {
             setEditingFileIndex(-1);
             setIsEditing(false);
             setFileUri('');
             setEditedFileContent('');
             setSaveButtonLabel('Save File');
-        } else if (editingFileIndex > index) {
-            setEditingFileIndex(prev => prev - 1);
+        } else if (editingFileIndex > fileToDeleteIndex) {
+            setEditingFileIndex((prev) => prev - 1);
         }
+
+        setDeleteFileModalVisible(false);
+        setFileToDeleteIndex(null);
     };
 
     const confirmDeleteImage = (index) => {
@@ -335,7 +321,16 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const handleBackPress = () => {
-        if (text !== noteToEdit?.text || title !== noteToEdit?.title || files.length !== (noteToEdit?.files?.length || 0) || tasks.length !== (noteToEdit?.tasks?.length || 0)) {
+        const imagesFromNote = (noteToEdit?.images || []).map(img => img.uri);
+
+        const hasChanges =
+            text !== noteToEdit?.text ||
+            title !== noteToEdit?.title ||
+            JSON.stringify(files) !== JSON.stringify(noteToEdit?.files || []) ||
+            JSON.stringify(tasks) !== JSON.stringify(noteToEdit?.tasks || []) ||
+            JSON.stringify(selectedImages) !== JSON.stringify(imagesFromNote);
+
+        if (hasChanges) {
             setShowSaveModal(true);
         } else {
             setTitle('');
@@ -344,6 +339,7 @@ const NoteView = ({ navigation, route }) => {
             setTasks([]);
             setSelectedImages([]);
             navigation.goBack();
+            setEditingFileIndex(-1);
         }
     };
 
@@ -357,12 +353,6 @@ const NoteView = ({ navigation, route }) => {
 
         return () => backHandler.remove();
     }, [text, title, files, noteToEdit]);
-
-    const handleSwipe = (event) => {
-        if (event.nativeEvent.translationX < -100) {
-            handleBackPress();
-        }
-    }
 
     const addPhoto = async () => {
         try {
@@ -437,7 +427,7 @@ const NoteView = ({ navigation, route }) => {
                                             e.stopPropagation();
                                             handleFilePress(index, file.uri);
                                         }}
-                                        onLongPress={() => deleteFile(index)}
+                                        onLongPress={() => requestFileDelete(index)}
                                     >
                                         <Text className="text-blue-600 font-semibold text-base truncate max-w-[70%]">
                                             {file.name}
@@ -458,27 +448,76 @@ const NoteView = ({ navigation, route }) => {
                                 </View>
                             ))}
                         </View>
+                        <Modal
+                            transparent={true}
+                            visible={deleteFileModalVisible}
+                            onRequestClose={cancelFileDelete}
+                            animationType="none"
+                        >
+                            <TouchableWithoutFeedback onPress={cancelFileDelete}>
+                                <View className="flex-1 bg-black/60 justify-center items-center">
+                                    <TouchableWithoutFeedback>
+                                        <View
+                                            className="w-[65%] rounded-2xl p-5 items-center bg-gray-200"
+                                            style={{
+                                                backgroundColor: '#f0f0f0',
+                                                borderWidth: 2,
+                                                borderColor: 'rgba(100, 120, 180, 0.3)',
+                                                shadowColor: '#000',
+                                                shadowOffset: { width: 0, height: 4 },
+                                                shadowOpacity: 0.3,
+                                                shadowRadius: 8,
+                                                elevation: 10,
+                                            }}
+                                        >
+                                            <Text className="text-xl font-semibold text-gray-800 mb-3">
+                                                Delete this file?
+                                            </Text>
+
+                                            <TouchableOpacity
+                                                className="w-full border-t border-gray-300 pt-2 mb-1 items-center"
+                                                onPress={confirmFileDelete}
+                                            >
+                                                <Text className="text-lg text-red-600">Yes, delete</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                className="w-full border-t border-gray-300 pt-2 items-center"
+                                                onPress={cancelFileDelete}
+                                            >
+                                                <Text className="text-lg text-gray-700">Cancel</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableWithoutFeedback>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
 
                         {tasks.map((task) => (
-                            <View key={task.id} className="flex flex-row items-center gap-3 p-2 bg-white rounded-lg shadow">
+                            <View
+                                key={task.id}
+                                className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 mx-3 border border-gray-200 shadow-sm"
+                            >
                                 {/* Чекбокс */}
                                 <Pressable
                                     onPress={() => toggleCheckbox(task.id)}
-                                    className="w-6 h-6 flex items-center justify-center border border-gray-400 rounded"
+                                    className={`w-5 h-5 rounded-full border-2 mr-3 ${task.checked ? 'border-green-500 bg-green-500' : 'border-gray-400'
+                                        } items-center justify-center`}
                                 >
-                                    <Text className={task.checked ? 'text-green-600 text-lg' : 'text-gray-500 text-lg'}>
-                                        {task.checked ? '✔' : ''}
-                                    </Text>
+                                    {task.checked && <Text className="text-white text-xs">✔</Text>}
                                 </Pressable>
 
-                                {/* Инпут */}
+                                {/* Текст задачи */}
                                 <TextInput
-                                    multiline={true}
-                                    textAlignVertical="top"
+                                    multiline
+                                    textAlignVertical="center"
                                     value={task.text}
                                     onChangeText={(text) => updateTask(task.id, text)}
                                     placeholder="Enter your task"
-                                    className="flex-1 m-1 border-b border-gray-300 bg-white rounded-lg "
+                                    placeholderTextColor="#9ca3af"
+                                    className={`flex-1 text-[15px] text-gray-800 py-1 ${task.checked ? 'line-through text-gray-400' : ''
+                                        }`}
+                                    style={{ minHeight: 30 }}
                                 />
                             </View>
                         ))}

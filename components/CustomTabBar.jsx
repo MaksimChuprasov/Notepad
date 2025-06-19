@@ -23,14 +23,10 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
         return null;
     }
 
-    if (log) {
-
-    }
-
     return (
         <View className="bg-white py-2 px-6">
             <View className="flex-row justify-between">
-                {/* Первая кнопка */}
+                {/* First button */}
                 <TouchableOpacity
                     className="bg-white items-center"
                     onPress={() => navigation.navigate('Home')}
@@ -42,7 +38,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                     <Text className="text-[12px]">Home</Text>
                 </TouchableOpacity>
 
-                {/* Вторая кнопка */}
+                {/* Second button*/}
                 <TouchableOpacity
                     className="bg-white items-center"
                     onPress={() => navigation.navigate('Social')}
@@ -54,7 +50,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                     <Text className="text-[12px]">Social</Text>
                 </TouchableOpacity>
 
-                {/* Третья кнопка */}
+                {/* Third button */}
                 <TouchableOpacity
                     className="bg-white items-center"
                     onPress={handleAddPress}
@@ -67,7 +63,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                 </TouchableOpacity>
 
 
-                {/* Четвертая кнопка */}
+                {/* fourth button */}
                 <TouchableOpacity
                     className="bg-white items-center hidden"
                     onPress={() => navigation.navigate('LogIn')}

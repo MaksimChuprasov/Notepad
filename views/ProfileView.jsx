@@ -1,15 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    Image
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView, Image } from 'react-native';
 
 
 const ProfileView = () => {

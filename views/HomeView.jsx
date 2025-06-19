@@ -6,7 +6,6 @@ import Note from '../components/Note';
 import { StatusBar } from 'expo-status-bar';
 
 const HomeView = ({ navigation }) => {
-    const [notes, setNotes] = useState([]);
     const [filteredNotes, setFilteredNotes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
@@ -135,7 +134,7 @@ const HomeView = ({ navigation }) => {
                                     <Note
                                         note={item}
                                         isSelected={selectedNotes.includes(item.id)}
-                                    formattedDate={formatDate(item.date)} // твоя функция форматирования
+                                        formattedDate={formatDate(item.date)}
                                     />
                                 </Pressable>
                             )}

@@ -3,11 +3,9 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
 import SocialView from "../views/SocialView";
-import LogIn from "../views/LogIn";
 import NoteView from "../views/NoteView";
 import ProfileView from "../views/ProfileView";
 import { NoteProvider } from "./NoteContext";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   NavigationContainer,
   NavigationIndependentTree,
@@ -27,11 +25,6 @@ const MainTabNavigator = () => {
         options={{ headerShown: false }}
         name="Social"
         component={SocialView}
-      />
-      <Tab.Screen
-        options={{ headerShown: false }}
-        name="LogIn"
-        component={LogIn}
       />
       <Tab.Screen
         options={{ headerShown: false }}
