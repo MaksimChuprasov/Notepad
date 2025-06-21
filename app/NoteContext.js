@@ -88,11 +88,24 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  const deleteNotes = async (idsToDelete) => {
+    try {
+      await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`http://192.168.1.100/api/v1/notes/${id}`, {
+            method: "DELETE",
+          })
+        )
+      );
 
-  const deleteNotes = (idsToDelete) => {
-    setNotes((prevNotes) =>
-      prevNotes.filter((note) => !idsToDelete.includes(note.id))
-    );
+      const updatedNotes = notes.filter(
+        (note) => !idsToDelete.includes(note.id)
+      );
+      setNotes(updatedNotes);
+      saveNotesToStorage(updatedNotes);
+    } catch (error) {
+      console.error("Ошибка при удалении заметок:", error);
+    }
   };
 
   return (
