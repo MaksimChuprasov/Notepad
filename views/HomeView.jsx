@@ -95,6 +95,8 @@ const HomeView = ({ navigation }) => {
         return date.toLocaleDateString(undefined, options);
     };
 
+    
+
     return (
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
             <StatusBar style="dark" />

@@ -1,19 +1,13 @@
 import { View, Text } from 'react-native';
-import React from 'react';
+import React, {useEffect} from 'react';
 import { format } from 'date-fns';
 
 const Note = ({ note, formattedDate, isSelected }) => {
-   
+
 
     return (
         <View
-            className={`
-    flex-1
-    bg-white
-    rounded-3xl
-    p-4
-    mb-4
-    border
+            className={`flex-1 bg-white rounded-3xl p-4 mb-4 border
     ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 160 }}>
             {/* Заголовок */}
             {note?.title && (

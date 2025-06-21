@@ -122,12 +122,12 @@ const NoteView = ({ navigation, route }) => {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files, // обычные файлы
+            files, 
             tasks,
             images: selectedImages.map(uri => ({
                 uri,
                 name: getFileNameFromUri(uri),
-            })), // картинки — в отдельный массив
+            })),
         };
 
         if (initialNoteToEdit) {
