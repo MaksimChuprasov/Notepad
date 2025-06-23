@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback, BackHandler, Modal, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import * as DocumentPicker from 'expo-document-picker';
 import NoteContext from '../app/NoteContext';
 import SaveModal from '../components/SaveModal'
-import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+import {  GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
-import { PermissionsAndroid, Platform, Alert } from 'react-native';
+import {  Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system';
+import TitleInput from '../components/TitleInput.jsx'
 
 const NoteView = ({ navigation, route }) => {
     const { StorageAccessFramework } = FileSystem;
@@ -33,11 +33,11 @@ const NoteView = ({ navigation, route }) => {
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [deleteFileModalVisible, setDeleteFileModalVisible] = useState(false);
     const [fileToDeleteIndex, setFileToDeleteIndex] = useState(null);
-
+    const [isSaved, setIsSaved] = useState(false);
+    const [lastSavedNote, setLastSavedNote] = useState(null);
+    const [titleError, setTitleError] = useState('');
     const [isModalVisible, setModalVisible] = useState(false);
-
     const [tasks, setTasks] = useState([]);
-
     const [searchCollaborator, setSearchCollaborator] = useState('');
 
     const collaborators = [
@@ -86,14 +86,6 @@ const NoteView = ({ navigation, route }) => {
         setCollabModal(!collabModal);
     };
 
-    const toggleImage = () => {
-        setGptImage((prevImage) =>
-            prevImage === require('../images/Chat_Gpt.png')
-                ? require('../images/Chat_Gpt_On.png')
-                : require('../images/Chat_Gpt.png')
-        );
-    };
-
     const isFocused = useIsFocused();
 
     // При загрузке заметки
@@ -118,11 +110,18 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const saveNote = () => {
+        if (!title.trim()) {
+            setTitleError('Title is required');
+            return;
+        }
+
+        setTitleError('');
+
         const updatedNote = {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files, 
+            files,
             tasks,
             images: selectedImages.map(uri => ({
                 uri,
@@ -136,32 +135,61 @@ const NoteView = ({ navigation, route }) => {
             addNote(updatedNote);
         }
 
-        // Очистка стейтов
-        setTitle('');
-        setText('');
-        setFiles([]);
-        setTasks([]);
-        setSelectedImages([]);
-        setShowSaveModal(false);
-        setEditingFileIndex(-1);
-        navigation.goBack();
+        setIsSaved(true);
+        setLastSavedNote(updatedNote);
+    };
+
+    const saveNoteModal = () => {
+        saveNote();
+        clearEditorAndExit();
+    }
+
+    const checkIfNoteChanged = () => {
+        if (!lastSavedNote) return true;
+
+        const imagesFromSaved = (lastSavedNote.images || []).map(img => img.uri);
+
+        return (
+            text !== lastSavedNote.text ||
+            title !== lastSavedNote.title ||
+            JSON.stringify(files) !== JSON.stringify(lastSavedNote.files || []) ||
+            JSON.stringify(tasks) !== JSON.stringify(lastSavedNote.tasks || []) ||
+            JSON.stringify(selectedImages) !== JSON.stringify(imagesFromSaved)
+        );
     };
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-            const hasChanges =
-                text !== initialNoteToEdit?.text ||
-                title !== initialNoteToEdit?.title ||
-                JSON.stringify(files) !== JSON.stringify(initialNoteToEdit?.files || []) ||
-                JSON.stringify(tasks) !== JSON.stringify(initialNoteToEdit?.tasks || []);
-            if (hasChanges) {
+            if (checkIfNoteChanged()) {
                 e.preventDefault();
                 setShowSaveModal(true);
             }
         });
 
         return unsubscribe;
-    }, [navigation, text, title, files, tasks, initialNoteToEdit]);
+    }, [navigation, text, title, files, tasks, selectedImages]);
+
+    useEffect(() => {
+        const changed = checkIfNoteChanged();
+        setIsSaved(!changed);
+    }, [text, title, files, tasks, selectedImages, lastSavedNote]);
+
+    const clearEditorAndExit = () => {
+        setTitle('');
+        setText('');
+        setFiles([]);
+        setTasks([]);
+        setSelectedImages([]);
+        setEditingFileIndex(-1);
+        setShowSaveModal(false);
+        setIsSaved(false);
+        setTitleError('');
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+        } else {
+            navigation.navigate('Home');
+        }
+    };
 
     const decodeFileNameFromUri = (uri) => {
         try {
@@ -302,15 +330,14 @@ const NoteView = ({ navigation, route }) => {
         setGptImage(require('../images/Chat_Gpt.png'))
         setIsNavigating(true);
 
-        setTitle('');
-        setText('');
-        setFiles([]);
-        setTasks([]);
-        setSelectedImages([]);
-        setEditingFileIndex(-1);
+        clearEditorAndExit();
 
         setTimeout(() => {
-            navigation.goBack();
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate('Home');
+            }
         }, 100);
     };
     const handleOutsidePress = () => {
@@ -321,25 +348,10 @@ const NoteView = ({ navigation, route }) => {
     };
 
     const handleBackPress = () => {
-        const imagesFromNote = (noteToEdit?.images || []).map(img => img.uri);
-
-        const hasChanges =
-            text !== noteToEdit?.text ||
-            title !== noteToEdit?.title ||
-            JSON.stringify(files) !== JSON.stringify(noteToEdit?.files || []) ||
-            JSON.stringify(tasks) !== JSON.stringify(noteToEdit?.tasks || []) ||
-            JSON.stringify(selectedImages) !== JSON.stringify(imagesFromNote);
-
-        if (hasChanges) {
+        if (checkIfNoteChanged()) {
             setShowSaveModal(true);
         } else {
-            setTitle('');
-            setText('');
-            setFiles([]);
-            setTasks([]);
-            setSelectedImages([]);
-            navigation.goBack();
-            setEditingFileIndex(-1);
+            clearEditorAndExit();
         }
     };
 
@@ -390,17 +402,17 @@ const NoteView = ({ navigation, route }) => {
                                 className="w-8 h-8 mt-4"
                             />
                         </TouchableOpacity>
-                        <TextInput
-                            scrollEnabled={true}
-                            className="p-2 mt-2 bg-white text-xl font-bold w-2/3"
-                            placeholder='New Note'
-                            onChangeText={(title) => setTitle(title)}
+                        <TitleInput className="w-full"
                             value={title}
-                            multiline={true}
+                            onChangeText={(text) => {
+                                setTitle(text);
+                                if (text.trim()) setTitleError('');
+                            }}
+                            errorMessage={titleError}
                         />
-                        <TouchableOpacity className="mx-2" onPress={toggleImage}>
+                        <TouchableOpacity className="mx-2" onPress={saveNote}>
                             <Image
-                                source={Gptimage}
+                                source={require('../images/saveBtn.png')}
                                 className="w-8 h-8 mt-4"
                             />
                         </TouchableOpacity>
@@ -781,7 +793,7 @@ const NoteView = ({ navigation, route }) => {
                     <SaveModal
                         visible={showSaveModal}
                         onExit={handleExitWithoutSaving}
-                        onSave={saveNote}
+                        onSave={saveNoteModal}
                         onClose={handleOutsidePress}
                     />
                     <Modal

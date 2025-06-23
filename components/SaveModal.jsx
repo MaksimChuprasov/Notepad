@@ -26,7 +26,7 @@ const SaveModal = ({ visible, onSave, onClose, onExit }) => {
                             }}
                         >
                             <Text className="text-xl font-semibold text-gray-800 mb-3">
-                                Save this note?
+                                You didn`t save your note. Save this note?
                             </Text>
 
                             <TouchableOpacity

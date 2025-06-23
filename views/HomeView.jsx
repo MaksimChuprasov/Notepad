@@ -18,8 +18,9 @@ const HomeView = ({ navigation }) => {
 
     useEffect(() => {
         const lowercasedQuery = searchQuery.toLowerCase();
+        
         const filtered = contextNotes.filter(note =>
-            note.text.toLowerCase().includes(lowercasedQuery) ||
+            (note.text || '').toLowerCase().includes(lowercasedQuery) ||
             note.title.toLowerCase().includes(lowercasedQuery) ||
             note.files.some(file =>
                 typeof file === 'string' && file.toLowerCase().includes(lowercasedQuery) ||
@@ -32,7 +33,7 @@ const HomeView = ({ navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             setFilteredNotes(contextNotes.filter(note =>
-                note.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (note.text || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                 note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 note.files.some(file =>
                     typeof file === 'string' && file.toLowerCase().includes(searchQuery.toLowerCase()) ||
