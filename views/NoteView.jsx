@@ -3,9 +3,9 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, Image, SafeAreaView,
 import { useIsFocused } from '@react-navigation/native';
 import NoteContext from '../app/NoteContext';
 import SaveModal from '../components/SaveModal'
-import {  GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
-import {  Alert } from 'react-native';
+import { Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import TitleInput from '../components/TitleInput.jsx'
 
@@ -39,6 +39,7 @@ const NoteView = ({ navigation, route }) => {
     const [isModalVisible, setModalVisible] = useState(false);
     const [tasks, setTasks] = useState([]);
     const [searchCollaborator, setSearchCollaborator] = useState('');
+
 
     const collaborators = [
         { id: 1, name: 'Max' },
@@ -137,6 +138,7 @@ const NoteView = ({ navigation, route }) => {
 
         setIsSaved(true);
         setLastSavedNote(updatedNote);
+        clearEditorAndExit();
     };
 
     const saveNoteModal = () => {
@@ -356,15 +358,20 @@ const NoteView = ({ navigation, route }) => {
     };
 
     useEffect(() => {
+        if (!isFocused) return;
+
         const backAction = () => {
             handleBackPress();
             return true;
         };
 
-        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
 
         return () => backHandler.remove();
-    }, [text, title, files, noteToEdit]);
+    }, [isFocused, text, title, files, noteToEdit]);
 
     const addPhoto = async () => {
         try {
