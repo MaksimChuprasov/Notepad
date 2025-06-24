@@ -5,11 +5,30 @@ const NoteContext = createContext();
 
 export const NoteProvider = ({ children }) => {
   const [notes, setNotes] = useState([]);
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
+    const loadToken = async () => {
+      const savedToken = await AsyncStorage.getItem("userToken");
+      setToken(savedToken);
+    };
+
+    loadToken();
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
     const loadNotes = async () => {
       try {
-        const response = await fetch("http://192.168.1.100/api/v1/notes");
+        const response = await fetch("http://192.168.1.100/api/v1/notes", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) throw new Error("Ошибка при загрузке заметок");
+
         const apiNotes = await response.json();
         setNotes(apiNotes);
         saveNotesToStorage(apiNotes);
@@ -27,7 +46,7 @@ export const NoteProvider = ({ children }) => {
     };
 
     loadNotes();
-  }, []);
+  }, [token]);
 
   const saveNotesToStorage = async (newNotes) => {
     try {
@@ -38,11 +57,14 @@ export const NoteProvider = ({ children }) => {
   };
 
   const addNote = async (note) => {
+    if (!token) return;
+
     try {
       const response = await fetch("http://192.168.1.100/api/v1/notes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(note),
       });
@@ -62,6 +84,8 @@ export const NoteProvider = ({ children }) => {
   };
 
   const updateNote = async (updatedNote) => {
+    if (!token) return;
+
     try {
       const response = await fetch(
         `http://192.168.1.100/api/v1/notes/${updatedNote.id}`,
@@ -69,6 +93,7 @@ export const NoteProvider = ({ children }) => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(updatedNote),
         }
@@ -89,11 +114,16 @@ export const NoteProvider = ({ children }) => {
   };
 
   const deleteNotes = async (idsToDelete) => {
+    if (!token) return;
+
     try {
       await Promise.all(
         idsToDelete.map((id) =>
           fetch(`http://192.168.1.100/api/v1/notes/${id}`, {
             method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           })
         )
       );

@@ -16,30 +16,32 @@ const HomeView = ({ navigation }) => {
         setFilteredNotes(contextNotes);
     }, [contextNotes]);
 
-    useEffect(() => {
-        const lowercasedQuery = searchQuery.toLowerCase();
-        
-        const filtered = contextNotes.filter(note =>
+    const filterNotes = (notes, query) => {
+        const lowercasedQuery = query.toLowerCase();
+
+        return notes.filter(note =>
             (note.text || '').toLowerCase().includes(lowercasedQuery) ||
-            note.title.toLowerCase().includes(lowercasedQuery) ||
-            note.files.some(file =>
-                typeof file === 'string' && file.toLowerCase().includes(lowercasedQuery) ||
-                file.name && file.name.toLowerCase().includes(lowercasedQuery)
+            (note.title || '').toLowerCase().includes(lowercasedQuery) ||
+            (note.files || []).some(file =>
+                typeof file === 'string'
+                    ? file.toLowerCase().includes(lowercasedQuery)
+                    : file.name?.toLowerCase().includes(lowercasedQuery)
             )
         );
-        setFilteredNotes(filtered);
+    };
+
+    useEffect(() => {
+        if (Array.isArray(contextNotes)) {
+            const filtered = filterNotes(contextNotes, searchQuery);
+            setFilteredNotes(filtered);
+        }
     }, [searchQuery, contextNotes]);
 
     useFocusEffect(
         React.useCallback(() => {
-            setFilteredNotes(contextNotes.filter(note =>
-                (note.text || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                note.files.some(file =>
-                    typeof file === 'string' && file.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    file.name && file.name.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-            ));
+            if (Array.isArray(contextNotes)) {
+                setFilteredNotes(filterNotes(contextNotes, searchQuery));
+            }
         }, [contextNotes, searchQuery])
     );
 
@@ -96,7 +98,7 @@ const HomeView = ({ navigation }) => {
         return date.toLocaleDateString(undefined, options);
     };
 
-    
+
 
     return (
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">

@@ -15,7 +15,7 @@ const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
   return (
-    <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />}>
+    <Tab.Navigator initialRouteName="Profile"  tabBar={(props) => <CustomTabBar {...props} />}>
       <Tab.Screen
         options={{ headerShown: false }}
         name="Home"

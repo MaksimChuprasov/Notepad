@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView, Image } from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const ProfileView = () => {
@@ -8,17 +9,75 @@ const ProfileView = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleRegister = () => {
-        if (name && email && password) {
+    useEffect(() => {
+        const checkToken = async () => {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                if (token) {
+                    setIsLoggedIn(true);
+                    const userInfo = await AsyncStorage.getItem('userInfo');
+                    if (userInfo) {
+                        const user = JSON.parse(userInfo);
+                        setName(user.name);
+                        setEmail(user.email);
+                    }
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки токена:', e);
+            }
+        };
+
+        checkToken();
+    }, []);
+
+    const handleRegister = async () => {
+        if (!name || !email || !password) {
+            alert('Please fill all fields');
+            return;
+        }
+
+        try {
+            const response = await fetch("http://192.168.1.100/api/v1/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error during registration/login');
+            }
+
+            const data = await response.json();
+
+            await AsyncStorage.setItem('userToken', data.token);
+            await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
+
             setIsLoggedIn(true);
+            setName(data.user.name);
+            setEmail(data.user.email);
+
+            console.log('Token:', data.token);
+        } catch (error) {
+            console.error('Ошибка при регистрации/входе:', error.message);
+            alert(error.message);
         }
     };
-    const handleLogOut = () => {
+
+
+    const handleLogOut = async () => {
+        await AsyncStorage.removeItem('userToken');
+        await AsyncStorage.removeItem('userInfo');
         setIsLoggedIn(false);
+        setName('');
+        setEmail('');
+        setPassword('');
     };
 
     return isLoggedIn ? (
-        <SafeAreaView className="mt-16 px-5">
+        <SafeAreaView className="mt-12 px-5">
             <View className='flex-row justify-between items-start'>
                 <View>
                     <View className='flex-row items-center w-3/4'>
