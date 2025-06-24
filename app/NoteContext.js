@@ -16,6 +16,10 @@ export const NoteProvider = ({ children }) => {
     loadToken();
   }, []);
 
+  const updateToken = (newToken) => {
+    setToken(newToken);
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -139,7 +143,7 @@ export const NoteProvider = ({ children }) => {
   };
 
   return (
-    <NoteContext.Provider value={{ notes, addNote, updateNote, deleteNotes }}>
+    <NoteContext.Provider value={{ notes, addNote, updateNote, deleteNotes, updateToken, token }}>
       {children}
     </NoteContext.Provider>
   );

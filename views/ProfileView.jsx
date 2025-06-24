@@ -1,9 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView, Image } from 'react-native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { StatusBar } from 'expo-status-bar';
+import NoteContext from '@/app/NoteContext';
 
 const ProfileView = () => {
+    const { updateToken } = useContext(NoteContext);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -55,6 +57,8 @@ const ProfileView = () => {
             await AsyncStorage.setItem('userToken', data.token);
             await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
 
+            updateToken(data.token);
+
             setIsLoggedIn(true);
             setName(data.user.name);
             setEmail(data.user.email);
@@ -70,6 +74,7 @@ const ProfileView = () => {
     const handleLogOut = async () => {
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('userInfo');
+        updateToken(null);
         setIsLoggedIn(false);
         setName('');
         setEmail('');
@@ -77,8 +82,9 @@ const ProfileView = () => {
     };
 
     return isLoggedIn ? (
-        <SafeAreaView className="mt-12 px-5">
-            <View className='flex-row justify-between items-start'>
+        <SafeAreaView className="px-5">
+            <StatusBar style="dark" />
+            <View className='flex-row justify-between items-start mt-10'>
                 <View>
                     <View className='flex-row items-center w-3/4'>
                         <Text className='font-bold text-3xl' numberOfLines={1} ellipsizeMode="tail">{name}</Text>
@@ -91,7 +97,7 @@ const ProfileView = () => {
                 </View>
                 <TouchableOpacity
                     onPress={handleLogOut}
-                    className="items-center"
+                    className="items-center mt-1"
                 >
                     <Image
                         source={require('../images/logout.png')}
