@@ -39,7 +39,7 @@ const ProfileView = () => {
         }
 
         try {
-            const response = await fetch("http://192.168.1.100/api/v1/login", {
+            const response = await fetch("http://notepad.faceqd.site/api/v1/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -122,12 +122,12 @@ const NoteView = ({ navigation, route }) => {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
-            files,
+            /* files, */
             tasks,
-            images: selectedImages.map(uri => ({
+            /* images: selectedImages.map(uri => ({
                 uri,
                 name: getFileNameFromUri(uri),
-            })),
+            })), */
         };
 
         if (initialNoteToEdit) {
