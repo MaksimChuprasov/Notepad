@@ -110,6 +110,8 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
+    
+
     const saveNote = () => {
         if (!title.trim()) {
             setTitleError('Title is required');

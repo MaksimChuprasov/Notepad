@@ -15,6 +15,7 @@
         "foregroundImage": "./images/logo.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.maksim_chuprasov.Notepad",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
@@ -30,7 +31,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
