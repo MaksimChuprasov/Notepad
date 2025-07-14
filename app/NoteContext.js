@@ -25,7 +25,7 @@ export const NoteProvider = ({ children }) => {
 
     const loadNotes = async () => {
       try {
-        const response = await fetch("http://notepad.faceqd.site/api/v1/notes", {
+        const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -64,7 +64,7 @@ export const NoteProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://notepad.faceqd.site/api/v1/notes", {
+      const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,7 +92,7 @@ export const NoteProvider = ({ children }) => {
 
     try {
       const response = await fetch(
-        `http://notepad.faceqd.site/api/v1/notes/${updatedNote.id}`,
+        `https://notepad.faceqd.site/api/v1/notes/${updatedNote.id}`,
         {
           method: "PUT",
           headers: {
@@ -123,7 +123,7 @@ export const NoteProvider = ({ children }) => {
     try {
       await Promise.all(
         idsToDelete.map((id) =>
-          fetch(`http://notepad.faceqd.site/api/v1/notes/${id}`, {
+          fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${token}`,

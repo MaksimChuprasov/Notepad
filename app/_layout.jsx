@@ -37,7 +37,6 @@ const MainTabNavigator = () => {
     // Получаем push-токен
     registerForPushNotifications().then(token => {
       setExpoPushToken(token ?? null);
-      console.log('Push token:', token);
       if (token) {
         sendPushNotification(token);
       }
@@ -45,9 +44,6 @@ const MainTabNavigator = () => {
 
     // Слушатель получения уведомления в foreground — показываем локальное уведомление
     notificationListener.current = Notifications.addNotificationReceivedListener(async notification => {
-      console.log('Уведомление получено (foreground):', notification);
-
-      console.log('Показываю локальное уведомление вручную...');
       await Notifications.presentNotificationAsync({
         title: notification.request.content.title,
         body: notification.request.content.body,
@@ -62,7 +58,6 @@ const MainTabNavigator = () => {
 
     // Слушатель взаимодействия с уведомлением
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Пользователь взаимодействовал с уведомлением:', response);
     });
 
     // Очистка слушателей
@@ -96,7 +91,6 @@ const MainTabNavigator = () => {
       }),
     })
       .then(res => res.json())
-      .then(data => console.log('Push отправлен:', data))
       .catch(err => console.error('Ошибка при отправке push:', err));
   }
 

@@ -52,7 +52,8 @@
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
     "expo-notifications": "~0.31.4",
-    "expo-device": "~7.1.4"
+    "expo-device": "~7.1.4",
+    "expo-auth-session": "~6.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

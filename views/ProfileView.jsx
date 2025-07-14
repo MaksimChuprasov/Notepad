@@ -1,7 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView, Image } from 'react-native';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { StatusBar } from 'expo-status-bar';
+import { View, Text, TextInput, TouchableOpacity, Linking, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import NoteContext from '@/app/NoteContext';
 
 const ProfileView = () => {
@@ -32,14 +31,84 @@ const ProfileView = () => {
         checkToken();
     }, []);
 
+    // 🎯 Обработка deep link после Google авторизации
+    useEffect(() => {
+        const handleDeepLink = async (event) => {
+            const url = event.url;
+            const tokenMatch = url.match(/token=([^&]+)/);
+
+            if (tokenMatch) {
+                const token = decodeURIComponent(tokenMatch[1]);
+
+                try {
+                    const res = await fetch("https://notepad.faceqd.site/api/v1/user", {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+
+                    if (!res.ok) throw new Error('Ошибка при получении данных пользователя');
+
+                    const user = await res.json();
+
+                    await AsyncStorage.setItem('userToken', token);
+                    await AsyncStorage.setItem('userInfo', JSON.stringify(user));
+
+                    updateToken(token);
+                    setIsLoggedIn(true);
+                    setName(user.name);
+                    setEmail(user.email);
+
+                    console.log('✅ Google вход успешен');
+                } catch (e) {
+                    Alert.alert('Ошибка', e.message);
+                }
+            }
+        };
+
+        const subscription = Linking.addEventListener('url', handleDeepLink);
+
+        Linking.getInitialURL().then(url => {
+            if (url) handleDeepLink({ url });
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
+    // 📤 Запросить ссылку и открыть браузер
+    const handleGoogleLogin = async () => {
+        try {
+            const res = await fetch("https://notepad.faceqd.site/api/v1/auth/google", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            });
+
+            if (!res.ok) throw new Error('Ошибка сервера: ' + res.status);
+
+            const data = await res.json();
+
+            if (!data.url) throw new Error('Ответ сервера не содержит ссылку');
+
+            Linking.openURL(data.url);
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Ошибка', e.message || 'Не удалось получить ссылку авторизации');
+        }
+    };
+
     const handleRegister = async () => {
         if (!name || !email || !password) {
-            alert('Please fill all fields');
+            Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
             return;
         }
 
         try {
-            const response = await fetch("http://notepad.faceqd.site/api/v1/login", {
+            const response = await fetch("https://notepad.faceqd.site/api/v1/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -49,7 +118,7 @@ const ProfileView = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Error during registration/login');
+                throw new Error(errorData.message || 'Ошибка входа');
             }
 
             const data = await response.json();
@@ -62,14 +131,11 @@ const ProfileView = () => {
             setIsLoggedIn(true);
             setName(data.user.name);
             setEmail(data.user.email);
-
-            console.log('Token:', data.token);
         } catch (error) {
-            console.error('Ошибка при регистрации/входе:', error.message);
-            alert(error.message);
+            console.error('Ошибка при входе:', error.message);
+            Alert.alert('Ошибка', error.message);
         }
     };
-
 
     const handleLogOut = async () => {
         await AsyncStorage.removeItem('userToken');
@@ -151,6 +217,15 @@ const ProfileView = () => {
                     >
                         <Text className="text-white text-center text-lg font-semibold">
                             Create Profile
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="bg-gray-600 mt-3 py-3 rounded-xl shadow-lg active:opacity-80"
+                        onPress={handleGoogleLogin}
+                    >
+                        <Text className="text-white text-center text-lg font-semibold">
+                            GOOGLE
                         </Text>
                     </TouchableOpacity>
                 </View>
