@@ -115,6 +115,7 @@ const ProfileView = () => {
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
             const id_token = userInfo.data.idToken;
+            console.log(id_token)
 
             const response = await fetch('https://notepad.faceqd.site/api/v1/auth/google-token', {
                 method: 'POST',
@@ -268,12 +269,17 @@ const ProfileView = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className="bg-gray-600 mt-3 py-3 rounded-xl shadow-lg active:opacity-80"
+                        className="flex flex-row items-center justify-center bg-white border border-gray-300 mt-3 py-3 rounded-xl shadow-lg active:opacity-80 "
                         onPress={handleGoogleLogin}
                     >
-                        <Text className="text-white text-center text-lg font-semibold">
-                            GOOGLE
+                        <Image
+                            source={require('../images/google.png')}
+                            className="w-8 h-8"
+                        />
+                        <Text className="text-black text-center text-lg font-semibold ml-2">
+                            Sign in with Google
                         </Text>
+
                     </TouchableOpacity>
                 </View>
             </ScrollView>
