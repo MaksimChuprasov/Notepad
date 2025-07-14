@@ -1,7 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Linking, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, ScrollView, SafeAreaView, StatusBar, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NoteContext from '@/app/NoteContext';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
 
 const ProfileView = () => {
     const { updateToken } = useContext(NoteContext);
@@ -11,6 +13,11 @@ const ProfileView = () => {
     const [password, setPassword] = useState('');
 
     useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: '890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com', // ← твой OAuth client ID
+            offlineAccess: true,
+        });
+
         const checkToken = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
@@ -31,8 +38,9 @@ const ProfileView = () => {
         checkToken();
     }, []);
 
-    // 🎯 Обработка deep link после Google авторизации
-    useEffect(() => {
+
+
+    /* useEffect(() => {
         const handleDeepLink = async (event) => {
             const url = event.url;
             const tokenMatch = url.match(/token=([^&]+)/);
@@ -77,7 +85,7 @@ const ProfileView = () => {
         };
     }, []);
 
-    // 📤 Запросить ссылку и открыть браузер
+    
     const handleGoogleLogin = async () => {
         try {
             const res = await fetch("https://notepad.faceqd.site/api/v1/auth/google", {
@@ -100,6 +108,44 @@ const ProfileView = () => {
             Alert.alert('Ошибка', e.message || 'Не удалось получить ссылку авторизации');
         }
     };
+ */
+
+    const handleGoogleLogin = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            const id_token = userInfo.data.idToken;
+
+            const response = await fetch('https://notepad.faceqd.site/api/v1/auth/google-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id_token }),
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Ошибка авторизации: ${text}`);
+            }
+
+            const data = await response.json();
+
+            await AsyncStorage.setItem('userToken', data.token);
+            await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
+
+            updateToken(data.token);
+            setIsLoggedIn(true);
+            setName(data.user.name);
+            setEmail(data.user.email);
+
+            console.log('✅ Вход через Google успешен');
+        } catch (error) {
+            console.error('❌ Ошибка входа через Google', error);
+            Alert.alert('Ошибка входа через Google', error.message || 'Неизвестная ошибка');
+        }
+    };
+
 
     const handleRegister = async () => {
         if (!name || !email || !password) {
@@ -145,6 +191,7 @@ const ProfileView = () => {
         setName('');
         setEmail('');
         setPassword('');
+        await GoogleSignin.signOut();
     };
 
     return isLoggedIn ? (
@@ -152,14 +199,14 @@ const ProfileView = () => {
             <StatusBar style="dark" />
             <View className='flex-row justify-between items-start mt-10'>
                 <View>
-                    <View className='flex-row items-center w-3/4'>
-                        <Text className='font-bold text-3xl' numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+                    <View className='flex-row items-start w-3/4'>
+                        <Text className='font-bold text-3xl' numberOfLines={2} ellipsizeMode="tail">{name}</Text>
                         <Image
                             source={require('../images/user.png')}
                             className="w-10 h-10 ml-1"
                         />
                     </View>
-                    <Text className='text-lg text-gray-500 mt-[-10px]' numberOfLines={1} ellipsizeMode="tail">{email}</Text>
+                    <Text className='text-lg text-gray-500' numberOfLines={1} ellipsizeMode="tail">{email}</Text>
                 </View>
                 <TouchableOpacity
                     onPress={handleLogOut}
