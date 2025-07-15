@@ -39,17 +39,11 @@ const NoteView = ({ navigation, route }) => {
     const [tasks, setTasks] = useState([]);
     const [searchCollaborator, setSearchCollaborator] = useState('');
 
+    const { groups } = useContext(NoteContext);
 
-    const collaborators = [
-        { id: 1, name: 'Max' },
-        { id: 2, name: 'MaxCh' },
-        { id: 3, name: 'Alice' },
-        { id: 4, name: 'Bob' },
-    ];
-
-    const filteredCollaborators = collaborators.filter(collab =>
-        collab.name.toLowerCase().includes(searchCollaborator.toLowerCase())
-    );
+    useEffect(() => {
+        console.log('Группы:', groups);
+    }, [groups]);
 
 
     // Function to add a new task
@@ -207,126 +201,126 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-   /*  const selectFiles = async () => {
-        try {
-            const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-
-            if (!permission.granted) {
-                return;
-            }
-
-            const dirUri = permission.directoryUri;
-            let filesList = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
-
-            const filtered = [];
-            for (const fileUriItem of filesList) {
-                const info = await FileSystem.getInfoAsync(fileUriItem);
-                if (!info.exists) continue;
-
-                const fileName = decodeFileNameFromUri(fileUriItem);
-
-                if (
-                    fileName.startsWith('._') ||
-                    fileName.startsWith('.~') ||
-                    fileName.toLowerCase().includes('trash') ||
-                    fileName.toLowerCase().includes('recycle')
-                ) continue;
-
-                filtered.push({ uri: fileUriItem, name: fileName });
-            }
-
-            if (filtered.length === 0) {
-                return;
-            }
-
-            setFilteredFiles(filtered);
-            setFilePickerVisible(true);
-        } catch (err) {
-            console.error('Error while selecting folder:', err);
-        }
-    };
-
-    const saveEditedFile = async () => {
-        if (!fileUri || !editedFileContent) return;
-
-        try {
-            await StorageAccessFramework.writeAsStringAsync(fileUri, editedFileContent, {
-                encoding: FileSystem.EncodingType.UTF8,
-            });
-            setEditingFileIndex(-1);
-            setIsEditing(false);
-            setSaveButtonLabel('Save File');
-            setFileUri('');
-            setEditedFileContent('');
-        } catch {
-            Alert.alert("Error", "Failed to save file");
-        }
-    };
-
-    const openFile = async (uri, index) => {
-        try {
-            const content = await StorageAccessFramework.readAsStringAsync(uri);
-            setFileUri(uri);
-            setEditedFileContent(content);
-            setEditingFileIndex(index);
-            setIsEditing(true);
-            setSaveButtonLabel('Save Changes');
-        } catch {
-            Alert.alert("Error", "Couldn`t open this file");
-        }
-    };
-
-    const handleFilePress = (index, uri) => {
-        if (editingFileIndex === index) {
-            setEditingFileIndex(-1);
-        } else {
-            openFile(uri, index);
-            setEditingFileIndex(index);
-        }
-    };
-
-    const requestFileDelete = (index) => {
-        setFileToDeleteIndex(index);
-        setDeleteFileModalVisible(true);
-    };
-
-    const cancelFileDelete = () => {
-        setDeleteFileModalVisible(false);
-        setFileToDeleteIndex(null);
-    };
-
-    const confirmFileDelete = () => {
-        setFiles((prev) => prev.filter((_, i) => i !== fileToDeleteIndex));
-
-        if (editingFileIndex === fileToDeleteIndex) {
-            setEditingFileIndex(-1);
-            setIsEditing(false);
-            setFileUri('');
-            setEditedFileContent('');
-            setSaveButtonLabel('Save File');
-        } else if (editingFileIndex > fileToDeleteIndex) {
-            setEditingFileIndex((prev) => prev - 1);
-        }
-
-        setDeleteFileModalVisible(false);
-        setFileToDeleteIndex(null);
-    };
-
-    const confirmDeleteImage = (index) => {
-        setImageToDeleteIndex(index);
-        setDeleteImageModal(true);
-    }; 
-
-    const handleConfirmDelete = () => {
-        setSelectedImages((prev) => prev.filter((_, i) => i !== imageToDeleteIndex));
-        setDeleteImageModal(false);
-        setImageToDeleteIndex(null);
-    };
-
-    const handleCancelDelete = () => {
-        setDeleteImageModal(false);
-        setImageToDeleteIndex(null);
-    };*/
+    /*  const selectFiles = async () => {
+         try {
+             const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+ 
+             if (!permission.granted) {
+                 return;
+             }
+ 
+             const dirUri = permission.directoryUri;
+             let filesList = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
+ 
+             const filtered = [];
+             for (const fileUriItem of filesList) {
+                 const info = await FileSystem.getInfoAsync(fileUriItem);
+                 if (!info.exists) continue;
+ 
+                 const fileName = decodeFileNameFromUri(fileUriItem);
+ 
+                 if (
+                     fileName.startsWith('._') ||
+                     fileName.startsWith('.~') ||
+                     fileName.toLowerCase().includes('trash') ||
+                     fileName.toLowerCase().includes('recycle')
+                 ) continue;
+ 
+                 filtered.push({ uri: fileUriItem, name: fileName });
+             }
+ 
+             if (filtered.length === 0) {
+                 return;
+             }
+ 
+             setFilteredFiles(filtered);
+             setFilePickerVisible(true);
+         } catch (err) {
+             console.error('Error while selecting folder:', err);
+         }
+     };
+ 
+     const saveEditedFile = async () => {
+         if (!fileUri || !editedFileContent) return;
+ 
+         try {
+             await StorageAccessFramework.writeAsStringAsync(fileUri, editedFileContent, {
+                 encoding: FileSystem.EncodingType.UTF8,
+             });
+             setEditingFileIndex(-1);
+             setIsEditing(false);
+             setSaveButtonLabel('Save File');
+             setFileUri('');
+             setEditedFileContent('');
+         } catch {
+             Alert.alert("Error", "Failed to save file");
+         }
+     };
+ 
+     const openFile = async (uri, index) => {
+         try {
+             const content = await StorageAccessFramework.readAsStringAsync(uri);
+             setFileUri(uri);
+             setEditedFileContent(content);
+             setEditingFileIndex(index);
+             setIsEditing(true);
+             setSaveButtonLabel('Save Changes');
+         } catch {
+             Alert.alert("Error", "Couldn`t open this file");
+         }
+     };
+ 
+     const handleFilePress = (index, uri) => {
+         if (editingFileIndex === index) {
+             setEditingFileIndex(-1);
+         } else {
+             openFile(uri, index);
+             setEditingFileIndex(index);
+         }
+     };
+ 
+     const requestFileDelete = (index) => {
+         setFileToDeleteIndex(index);
+         setDeleteFileModalVisible(true);
+     };
+ 
+     const cancelFileDelete = () => {
+         setDeleteFileModalVisible(false);
+         setFileToDeleteIndex(null);
+     };
+ 
+     const confirmFileDelete = () => {
+         setFiles((prev) => prev.filter((_, i) => i !== fileToDeleteIndex));
+ 
+         if (editingFileIndex === fileToDeleteIndex) {
+             setEditingFileIndex(-1);
+             setIsEditing(false);
+             setFileUri('');
+             setEditedFileContent('');
+             setSaveButtonLabel('Save File');
+         } else if (editingFileIndex > fileToDeleteIndex) {
+             setEditingFileIndex((prev) => prev - 1);
+         }
+ 
+         setDeleteFileModalVisible(false);
+         setFileToDeleteIndex(null);
+     };
+ 
+     const confirmDeleteImage = (index) => {
+         setImageToDeleteIndex(index);
+         setDeleteImageModal(true);
+     }; 
+ 
+     const handleConfirmDelete = () => {
+         setSelectedImages((prev) => prev.filter((_, i) => i !== imageToDeleteIndex));
+         setDeleteImageModal(false);
+         setImageToDeleteIndex(null);
+     };
+ 
+     const handleCancelDelete = () => {
+         setDeleteImageModal(false);
+         setImageToDeleteIndex(null);
+     };*/
 
     const handleExitWithoutSaving = () => {
         setShowSaveModal(false);
@@ -761,32 +755,32 @@ const NoteView = ({ navigation, route }) => {
                                             />
 
                                             <ScrollView>
-                                                {filteredCollaborators.map((collab, index) => {
-                                                    const isLast = index === filteredCollaborators.length - 1;
+                                                {groups.map((group, id) => {
+                                                    const isLast = id === groups.length - 1;
 
                                                     return (
                                                         <TouchableOpacity
-                                                            key={collab.id}
+                                                            key={group.id}
                                                             className={`py-2 ${!isLast ? 'border-b border-gray-300' : ''}`}
                                                             onPress={() => {
                                                                 // Действие при выборе
-                                                                console.log('Выбран:', collab.name);
+                                                                console.log('Выбран:', group.name);
                                                             }}
                                                         >
                                                             <View className="flex-row">
                                                                 <Image
-                                                                    source={require('../images/collaborator.png')}
+                                                                    source={require('../images/add-group.png')}
                                                                     className="w-5 h-5 mr-2"
                                                                 />
-                                                                <Text>{collab.name}</Text>
+                                                                <Text>{group.name}</Text>
                                                             </View>
                                                         </TouchableOpacity>
                                                     );
                                                 })}
 
-                                                {filteredCollaborators.length === 0 && (
+                                                {groups.length === 0 && (
                                                     <View className="p-4 items-center">
-                                                        <Text className="text-gray-500">No collaborators found</Text>
+                                                        <Text className="text-gray-500">No groups found</Text>
                                                     </View>
                                                 )}
                                             </ScrollView>

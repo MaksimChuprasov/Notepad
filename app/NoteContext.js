@@ -6,6 +6,7 @@ const NoteContext = createContext();
 export const NoteProvider = ({ children }) => {
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState(null);
+  const [groups, setGroups] = useState([]);
 
   useEffect(() => {
     const loadToken = async () => {
@@ -143,7 +144,7 @@ export const NoteProvider = ({ children }) => {
   };
 
   return (
-    <NoteContext.Provider value={{ notes, addNote, updateNote, deleteNotes, updateToken, token }}>
+    <NoteContext.Provider value={{ notes, addNote, updateNote, deleteNotes, updateToken, token, groups, setGroups }}>
       {children}
     </NoteContext.Provider>
   );
