@@ -14,7 +14,7 @@ const ProfileView = () => {
 
     useEffect(() => {
         GoogleSignin.configure({
-            webClientId: '890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com', // ← твой OAuth client ID
+            webClientId: '890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com',
             offlineAccess: true,
         });
 
@@ -31,7 +31,7 @@ const ProfileView = () => {
                     }
                 }
             } catch (e) {
-                console.error('Ошибка загрузки токена:', e);
+                console.error('Error loading token:', e);
             }
         };
 
@@ -127,7 +127,7 @@ const ProfileView = () => {
 
             if (!response.ok) {
                 const text = await response.text();
-                throw new Error(`Ошибка авторизации: ${text}`);
+                throw new Error(`Authorization error: ${text}`);
             }
 
             const data = await response.json();
@@ -140,17 +140,15 @@ const ProfileView = () => {
             setName(data.user.name);
             setEmail(data.user.email);
 
-            console.log('✅ Вход через Google успешен');
         } catch (error) {
-            console.error('❌ Ошибка входа через Google', error);
-            Alert.alert('Ошибка входа через Google', error.message || 'Неизвестная ошибка');
+            console.error('❌ Google login error', error);
         }
     };
 
 
     const handleRegister = async () => {
         if (!name || !email || !password) {
-            Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
+            Alert.alert('Error', 'Please fill in all fields');
             return;
         }
 
@@ -165,7 +163,7 @@ const ProfileView = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Ошибка входа');
+                throw new Error(errorData.message || 'Login error');
             }
 
             const data = await response.json();
@@ -179,8 +177,8 @@ const ProfileView = () => {
             setName(data.user.name);
             setEmail(data.user.email);
         } catch (error) {
-            console.error('Ошибка при входе:', error.message);
-            Alert.alert('Ошибка', error.message);
+            console.error('Error logging in:', error.message);
+            Alert.alert('Error', error.message);
         }
     };
 

@@ -4,11 +4,6 @@ import { Platform } from 'react-native';
 
 export async function registerForPushNotifications() {
 
-  if (!Device.isDevice) {
-    alert('Push-уведомления работают только на физическом устройстве');
-    return;
-  }
-
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
 
   let finalStatus = existingStatus;
@@ -19,7 +14,7 @@ export async function registerForPushNotifications() {
   }
 
   if (finalStatus !== 'granted') {
-    alert('Разрешение на уведомления не получено');
+    alert('Notification permission not received');
     return;
   }
 
@@ -28,7 +23,7 @@ export async function registerForPushNotifications() {
     const tokenResponse = await Notifications.getExpoPushTokenAsync();
     token = tokenResponse.data;
   } catch (e) {
-    console.error('Ошибка при getExpoPushTokenAsync:', e);
+    console.error('Error while getExpoPushTokenAsync:', e);
   }
 
   if (Platform.OS === 'android') {

@@ -9,7 +9,7 @@ const Note = ({ note, formattedDate, isSelected }) => {
         <View
             className={`flex-1 bg-white rounded-3xl p-4 mb-4 border
     ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 160 }}>
-            {/* Заголовок */}
+            {/* Title */}
             {note?.title && (
                 <Text
                     className="text-lg font-bold mb-2 text-gray-900"
@@ -20,7 +20,7 @@ const Note = ({ note, formattedDate, isSelected }) => {
                 </Text>
             )}
 
-            {/* Основной текст */}
+            {/* Text */}
             <Text
                 className="text-gray-600 text-sm mb-2 flex-shrink"
                 numberOfLines={3}
@@ -29,7 +29,7 @@ const Note = ({ note, formattedDate, isSelected }) => {
                 {note?.text || 'Empty note'}
             </Text>
 
-            {/* Таски (если есть) */}
+            {/* Tasks */}
             {note?.tasks?.length > 0 && (
                 <View className="mt-1 space-y-1">
                     {note.tasks.slice(0, 3).map((task, i) => (
@@ -59,10 +59,9 @@ const Note = ({ note, formattedDate, isSelected }) => {
                 </View>
             )}
 
-            {/* Spacer чтобы прижать футер вниз */}
             <View className="flex-grow" />
 
-            {/* Файлы и дата */}
+            {/* Files */}
             <View className="flex-row justify-between items-center border-t border-gray-200 pt-2 mt-2">
                 {note?.files?.length > 0 && note.files[0].name ? (
                     <Text
@@ -73,7 +72,7 @@ const Note = ({ note, formattedDate, isSelected }) => {
                         📎 {note.files[0].name}
                     </Text>
                 ) : (
-                    <View className="w-[100px]" /> // Пустое место, чтобы сохранить симметрию
+                    <View className="w-[100px]" />
                 )}
             </View>
         </View>

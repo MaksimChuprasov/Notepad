@@ -28,7 +28,6 @@ const NoteView = ({ navigation, route }) => {
     const [isNavigating, setIsNavigating] = useState(false);
     const [editingFileIndex, setEditingFileIndex] = useState(-1);
     const [saveButtonLabel, setSaveButtonLabel] = useState('Save File');
-    const [Gptimage, setGptImage] = useState(require('../images/Chat_Gpt.png'));
     const [isFilePickerVisible, setFilePickerVisible] = useState(false);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [deleteFileModalVisible, setDeleteFileModalVisible] = useState(false);
@@ -53,7 +52,7 @@ const NoteView = ({ navigation, route }) => {
     );
 
 
-    // Функция добавления новой задачи
+    // Function to add a new task
     const addTask = () => {
         setTasks(prevTasks => [
             ...prevTasks,
@@ -61,7 +60,7 @@ const NoteView = ({ navigation, route }) => {
         ]);
     };
 
-    // Функция обновления текста задачи
+    // Task text update function
     const updateTask = (id, newText) => {
         setTasks(prevTasks =>
             prevTasks.map(task =>
@@ -70,7 +69,7 @@ const NoteView = ({ navigation, route }) => {
         );
     };
 
-    // Функция для переключения состояния checkbox
+    // Function to toggle the state of a checkbox
     const toggleCheckbox = (id) => {
         setTasks(prevTasks =>
             prevTasks.map(task =>
@@ -89,7 +88,7 @@ const NoteView = ({ navigation, route }) => {
 
     const isFocused = useIsFocused();
 
-    // При загрузке заметки
+    // When loading a note
     useEffect(() => {
         if (route.params?.noteToEdit) {
             const note = route.params.noteToEdit;
@@ -101,16 +100,16 @@ const NoteView = ({ navigation, route }) => {
         }
     }, [route.params]);
 
-    const getFileNameFromUri = (uri) => {
-        try {
-            const parts = uri.split('/');
-            return parts[parts.length - 1];
-        } catch {
-            return 'image.jpg';
-        }
-    };
+    /*  const getFileNameFromUri = (uri) => {
+         try {
+             const parts = uri.split('/');
+             return parts[parts.length - 1];
+         } catch {
+             return 'image.jpg';
+         }
+     }; */
 
-    
+
 
     const saveNote = () => {
         if (!title.trim()) {
@@ -208,7 +207,7 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-    const selectFiles = async () => {
+   /*  const selectFiles = async () => {
         try {
             const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
 
@@ -243,7 +242,7 @@ const NoteView = ({ navigation, route }) => {
             setFilteredFiles(filtered);
             setFilePickerVisible(true);
         } catch (err) {
-            console.error('Ошибка при выборе папки:', err);
+            console.error('Error while selecting folder:', err);
         }
     };
 
@@ -260,7 +259,7 @@ const NoteView = ({ navigation, route }) => {
             setFileUri('');
             setEditedFileContent('');
         } catch {
-            Alert.alert("Ошибка", "Не удалось сохранить файл");
+            Alert.alert("Error", "Failed to save file");
         }
     };
 
@@ -316,7 +315,7 @@ const NoteView = ({ navigation, route }) => {
     const confirmDeleteImage = (index) => {
         setImageToDeleteIndex(index);
         setDeleteImageModal(true);
-    };
+    }; 
 
     const handleConfirmDelete = () => {
         setSelectedImages((prev) => prev.filter((_, i) => i !== imageToDeleteIndex));
@@ -327,11 +326,10 @@ const NoteView = ({ navigation, route }) => {
     const handleCancelDelete = () => {
         setDeleteImageModal(false);
         setImageToDeleteIndex(null);
-    };
+    };*/
 
     const handleExitWithoutSaving = () => {
         setShowSaveModal(false);
-        setGptImage(require('../images/Chat_Gpt.png'))
         setIsNavigating(true);
 
         clearEditorAndExit();
@@ -436,7 +434,7 @@ const NoteView = ({ navigation, route }) => {
                             textAlignVertical="top"
                         />
 
-                        <View className="px-3 mb-2">
+                        {/* <View className="px-3 mb-2">
                             {files.map((file, index) => (
                                 <View
                                     key={index}
@@ -468,8 +466,8 @@ const NoteView = ({ navigation, route }) => {
                                     )}
                                 </View>
                             ))}
-                        </View>
-                        <Modal
+                        </View> */}
+                        {/* <Modal
                             transparent={true}
                             visible={deleteFileModalVisible}
                             onRequestClose={cancelFileDelete}
@@ -512,7 +510,7 @@ const NoteView = ({ navigation, route }) => {
                                     </TouchableWithoutFeedback>
                                 </View>
                             </TouchableWithoutFeedback>
-                        </Modal>
+                        </Modal> */}
 
                         {tasks.map((task) => (
                             <View
@@ -543,7 +541,7 @@ const NoteView = ({ navigation, route }) => {
                             </View>
                         ))}
 
-                        <View className="pt-4 px-3 w-full">
+                        {/* <View className="pt-4 px-3 w-full">
                             {selectedImages.map((uri, index) => (
                                 <TouchableOpacity
                                     key={index}
@@ -562,8 +560,8 @@ const NoteView = ({ navigation, route }) => {
                                     />
                                 </TouchableOpacity>
                             ))}
-                        </View>
-                        <Modal
+                        </View> */}
+                        {/* <Modal
                             transparent={true}
                             visible={deleteImageModal}
                             onRequestClose={handleCancelDelete}
@@ -606,15 +604,15 @@ const NoteView = ({ navigation, route }) => {
                                     </TouchableWithoutFeedback>
                                 </View>
                             </TouchableWithoutFeedback>
-                        </Modal>
+                        </Modal> */}
 
 
                     </ScrollView>
 
                     <View className="bg-[#F7F7F7] py-2 px-6 absolute bottom-0 left-0 w-full">
-                        <View className="flex-row justify-between">
+                        <View className="flex-row">
                             {/* Первая кнопка */}
-                            <View className="items-center w-12">
+                            {/* <View className="items-center w-12">
                                 {editingFileIndex !== -1 && (
                                     <TouchableOpacity
                                         className="flex items-center rounded-xl"
@@ -640,11 +638,11 @@ const NoteView = ({ navigation, route }) => {
                                     </TouchableOpacity>
                                 )}
 
-                            </View>
+                            </View> */}
 
                             {/* Вторая кнопка */}
                             <TouchableOpacity
-                                className="items-center"
+                                className="items-center mr-8"
                                 onPress={toggleModal}
                             >
                                 <Image
@@ -664,9 +662,9 @@ const NoteView = ({ navigation, route }) => {
                                     <View className="flex-1">
                                         {/* модальное окно */}
                                         <View
-                                            className="absolute bottom-[75px] left-20 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
+                                            className="absolute bottom-[75px] left-6 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
                                         >
-                                            <TouchableOpacity
+                                            {/* <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
                                                 onPress={addPhoto}
                                             >
@@ -677,7 +675,7 @@ const NoteView = ({ navigation, route }) => {
                                                     />
                                                     <Text>Add Photo</Text>
                                                 </View>
-                                            </TouchableOpacity>
+                                            </TouchableOpacity> */}
                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
                                                 onPress={addTask}
@@ -691,9 +689,9 @@ const NoteView = ({ navigation, route }) => {
                                                 </View>
                                             </TouchableOpacity>
 
-                                            <TouchableOpacity
+                                            {/* <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
-                                                onPress={() => { /* Add photo logic */ }}
+                                                onPress={() => {  }}
                                             >
                                                 <View className="flex-row">
                                                     <Image
@@ -705,7 +703,7 @@ const NoteView = ({ navigation, route }) => {
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 className="py-2 border-gray-300"
-                                                onPress={() => { /* Add photo logic */ }}
+                                                onPress={() => { }}
                                             >
                                                 <View className="flex-row">
                                                     <Image
@@ -714,7 +712,7 @@ const NoteView = ({ navigation, route }) => {
                                                     />
                                                     <Text>Add Location</Text>
                                                 </View>
-                                            </TouchableOpacity>
+                                            </TouchableOpacity> */}
                                         </View>
                                     </View>
                                 </TouchableWithoutFeedback>
@@ -741,7 +739,7 @@ const NoteView = ({ navigation, route }) => {
                                     source={require('../images/collaborator.png')}
                                     className="w-8 h-8"
                                 />
-                                <Text className="text-[12px]">Collaborator</Text>
+                                <Text className="text-[12px]">Groups</Text>
                             </TouchableOpacity>
                             <Modal
                                 animationType="none"
@@ -759,7 +757,7 @@ const NoteView = ({ navigation, route }) => {
                                                 value={searchCollaborator}
                                                 onChangeText={setSearchCollaborator}
                                                 className="border border-[#ddd] bg-white rounded-md mt-1 p-2 flex-1 h-10 max-h-10"
-                                                placeholder="Search your collaborator..."
+                                                placeholder="Search your group..."
                                             />
 
                                             <ScrollView>
@@ -805,7 +803,7 @@ const NoteView = ({ navigation, route }) => {
                         onSave={saveNoteModal}
                         onClose={handleOutsidePress}
                     />
-                    <Modal
+                    {/* <Modal
                         visible={isFilePickerVisible}
                         animationType="slide"
                         transparent={true}
@@ -855,7 +853,7 @@ const NoteView = ({ navigation, route }) => {
                                 </TouchableOpacity>
                             </View>
                         </View>
-                    </Modal>
+                    </Modal> */}
 
                 </View>
 

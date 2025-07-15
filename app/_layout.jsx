@@ -21,7 +21,6 @@ const MainTabNavigator = () => {
   const notificationListener = useRef();
   const responseListener = useRef();
 
-  // Создание канала для Android
   useEffect(() => {
     if (Platform.OS === 'android') {
       Notifications.setNotificationChannelAsync('default', {
@@ -34,7 +33,7 @@ const MainTabNavigator = () => {
   }, []);
 
   useEffect(() => {
-    // Получаем push-токен
+    // Get push-token
     registerForPushNotifications().then(token => {
       setExpoPushToken(token ?? null);
       if (token) {
@@ -42,7 +41,6 @@ const MainTabNavigator = () => {
       }
     });
 
-    // Слушатель получения уведомления в foreground — показываем локальное уведомление
     notificationListener.current = Notifications.addNotificationReceivedListener(async notification => {
       await Notifications.presentNotificationAsync({
         title: notification.request.content.title,
@@ -56,11 +54,9 @@ const MainTabNavigator = () => {
       });
     });
 
-    // Слушатель взаимодействия с уведомлением
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
     });
 
-    // Очистка слушателей
     return () => {
       if (notificationListener.current) notificationListener.current.remove();
       if (responseListener.current) responseListener.current.remove();
@@ -69,7 +65,7 @@ const MainTabNavigator = () => {
 
   function sendPushNotification(token) {
     if (!token) {
-      console.warn('Нет push-токена, пуш не отправлен');
+      console.warn('No push token, push not sent');
       return;
     }
 
@@ -83,15 +79,15 @@ const MainTabNavigator = () => {
       body: JSON.stringify({
         to: token,
         sound: 'default',
-        title: 'Привет!',
-        body: 'Тестовое уведомление',
+        title: 'Hello!',
+        body: 'Test',
         priority: 'high',
-        channelId: 'default', // важно для Android
+        channelId: 'default',
         data: { someData: 'goes here' },
       }),
     })
       .then(res => res.json())
-      .catch(err => console.error('Ошибка при отправке push:', err));
+      .catch(err => console.error('Error sending push:', err));
   }
 
   return (

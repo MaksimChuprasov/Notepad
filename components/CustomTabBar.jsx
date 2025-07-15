@@ -47,7 +47,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                         source={require('../images/social.png')}
                         className="w-8 h-8"
                     />
-                    <Text className="text-[12px]">Social</Text>
+                    <Text className="text-[12px]">Groups</Text>
                 </TouchableOpacity>
 
                 {/* Third button */}

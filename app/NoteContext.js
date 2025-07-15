@@ -31,20 +31,20 @@ export const NoteProvider = ({ children }) => {
           },
         });
 
-        if (!response.ok) throw new Error("Ошибка при загрузке заметок");
+        if (!response.ok) throw new Error("Error loading notes");
 
         const apiNotes = await response.json();
         setNotes(apiNotes);
         saveNotesToStorage(apiNotes);
       } catch (error) {
-        console.warn("API не доступен, загружаем из хранилища:", error);
+        console.warn("API is not available, loading from storage:", error);
         try {
           const storedNotes = await AsyncStorage.getItem("notes");
           if (storedNotes !== null) {
             setNotes(JSON.parse(storedNotes));
           }
         } catch (storageError) {
-          console.error("Ошибка загрузки из хранилища:", storageError);
+          console.error("Error loading from storage:", storageError);
         }
       }
     };
@@ -56,7 +56,7 @@ export const NoteProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem("notes", JSON.stringify(newNotes));
     } catch (error) {
-      console.error("Ошибка при сохранении заметок:", error);
+      console.error("Error saving notes:", error);
     }
   };
 
@@ -74,7 +74,7 @@ export const NoteProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error("Ошибка при добавлении заметки на сервер");
+        throw new Error("Error adding note to server");
       }
 
       const createdNote = await response.json();
@@ -83,7 +83,7 @@ export const NoteProvider = ({ children }) => {
       setNotes(newNotes);
       saveNotesToStorage(newNotes);
     } catch (error) {
-      console.error("Ошибка при добавлении заметки:", error);
+      console.error("Error adding note:", error);
     }
   };
 
@@ -104,7 +104,7 @@ export const NoteProvider = ({ children }) => {
       );
 
       if (!response.ok) {
-        throw new Error("Ошибка при обновлении заметки на сервере");
+        throw new Error("Error updating note on server");
       }
 
       const newNotes = notes.map((note) =>
@@ -113,7 +113,7 @@ export const NoteProvider = ({ children }) => {
       setNotes(newNotes);
       saveNotesToStorage(newNotes);
     } catch (error) {
-      console.error("Ошибка при обновлении заметки:", error);
+      console.error("Error updating note:", error);
     }
   };
 
@@ -138,7 +138,7 @@ export const NoteProvider = ({ children }) => {
       setNotes(updatedNotes);
       saveNotesToStorage(updatedNotes);
     } catch (error) {
-      console.error("Ошибка при удалении заметок:", error);
+      console.error("Error deleting notes:", error);
     }
   };
 
