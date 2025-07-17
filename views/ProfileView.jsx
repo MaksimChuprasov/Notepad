@@ -2,7 +2,10 @@ import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, ScrollView, SafeAreaView, StatusBar, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NoteContext from '@/app/NoteContext';
+import AdvancedNativeAd from '../components/AdvancedNativeAd'
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import mobileAds from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 
 const ProfileView = () => {
@@ -11,6 +14,16 @@ const ProfileView = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-3940256099942544/9214589741';
+
+    useEffect(() => {
+        mobileAds()
+            .initialize()
+            .then(adapterStatuses => {
+                console.log('AdMob инициализирован');
+            });
+    }, []);
 
     useEffect(() => {
         GoogleSignin.configure({
@@ -194,7 +207,7 @@ const ProfileView = () => {
     };
 
     return isLoggedIn ? (
-        <SafeAreaView className="px-5">
+        <SafeAreaView className="px-5 relative h-full">
             <StatusBar style="dark" />
             <View className='flex-row justify-between items-start mt-10'>
                 <View>
@@ -217,6 +230,16 @@ const ProfileView = () => {
                     />
                 </TouchableOpacity>
             </View>
+            <View className='absolute bottom-0'>
+                <BannerAd
+                    unitId={adUnitId}
+                    size={BannerAdSize.ADAPTIVE_BANNER}
+                    requestOptions={{
+                        requestNonPersonalizedAdsOnly: true,
+                    }}
+                />
+            </View>
+            {/* <AdvancedNativeAd/> */}
 
         </SafeAreaView>
     ) : (
