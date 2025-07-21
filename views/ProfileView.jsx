@@ -15,14 +15,11 @@ const ProfileView = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-3940256099942544/9214589741';
+    const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-5613402667721593/7654096833';
 
     useEffect(() => {
         mobileAds()
             .initialize()
-            .then(adapterStatuses => {
-                console.log('AdMob инициализирован');
-            });
     }, []);
 
     useEffect(() => {
@@ -128,7 +125,6 @@ const ProfileView = () => {
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
             const id_token = userInfo.data.idToken;
-            console.log(id_token)
 
             const response = await fetch('https://notepad.faceqd.site/api/v1/auth/google-token', {
                 method: 'POST',
@@ -159,7 +155,7 @@ const ProfileView = () => {
     };
 
 
-    const handleRegister = async () => {
+    /* const handleRegister = async () => {
         if (!name || !email || !password) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
@@ -193,7 +189,7 @@ const ProfileView = () => {
             console.error('Error logging in:', error.message);
             Alert.alert('Error', error.message);
         }
-    };
+    }; */
 
     const handleLogOut = async () => {
         await AsyncStorage.removeItem('userToken');
@@ -249,7 +245,7 @@ const ProfileView = () => {
         >
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <View className="flex-1 justify-center px-6">
-                    <Text className="text-2xl font-bold text-center mb-6 text-gray-800">
+                    {/* <Text className="text-2xl font-bold text-center mb-6 text-gray-800">
                         Create Your Profile
                     </Text>
 
@@ -287,20 +283,19 @@ const ProfileView = () => {
                         <Text className="text-white text-center text-lg font-semibold">
                             Create Profile
                         </Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     <TouchableOpacity
-                        className="flex flex-row items-center justify-center bg-white border border-gray-300 mt-3 py-3 rounded-xl shadow-lg active:opacity-80 "
+                        className="flex flex-row items-center justify-center bg-white border border-gray-300 mt-3 py-5 rounded-xl shadow-lg active:opacity-80 "
                         onPress={handleGoogleLogin}
                     >
                         <Image
                             source={require('../images/google.png')}
                             className="w-8 h-8"
                         />
-                        <Text className="text-black text-center text-lg font-semibold ml-2">
+                        <Text className="text-black text-center text-xl font-semibold ml-2">
                             Sign in with Google
                         </Text>
-
                     </TouchableOpacity>
                 </View>
             </ScrollView>

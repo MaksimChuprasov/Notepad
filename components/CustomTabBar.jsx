@@ -40,6 +40,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
                 {/* Second button*/}
                 <TouchableOpacity
+                    disabled
                     className="bg-white items-center"
                     onPress={() => navigation.navigate('Social')}
                 >

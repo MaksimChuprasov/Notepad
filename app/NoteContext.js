@@ -1,12 +1,26 @@
 import React, { createContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SplashScreen from 'expo-splash-screen';
 
 const NoteContext = createContext();
+
+SplashScreen.preventAutoHideAsync();
 
 export const NoteProvider = ({ children }) => {
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState(null);
   const [groups, setGroups] = useState([]);
+
+  useEffect(() => {
+    async function prepare() {
+      // Здесь можно загрузить ресурсы, данные и т.п.
+
+      // Когда всё готово, скрываем splash
+      await SplashScreen.hideAsync();
+    }
+
+    prepare();
+  }, []);
 
   useEffect(() => {
     const loadToken = async () => {
