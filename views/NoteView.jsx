@@ -46,17 +46,6 @@ const NoteView = ({ navigation, route }) => {
 
     const { groups } = useContext(NoteContext);
 
-    useEffect(() => {
-        const loadSelectedGroupIds = async () => {
-            const storedIds = await AsyncStorage.getItem('selectedGroupIds');
-            if (storedIds) {
-                setSelectedGroupIds(JSON.parse(storedIds));
-            }
-        };
-
-        loadSelectedGroupIds();
-    }, []);
-
     const handleGroupSelect = (groupId) => {
         setSelectedGroupIds(prev =>
             prev.includes(groupId)
