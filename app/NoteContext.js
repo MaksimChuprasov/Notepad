@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from "expo-splash-screen";
 
 const NoteContext = createContext();
 
@@ -10,6 +10,39 @@ export const NoteProvider = ({ children }) => {
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState(null);
   const [groups, setGroups] = useState([]);
+
+  const STORAGE_KEY = "groups_data";
+
+  const saveGroupsToStorage = async (data) => {
+    try {
+      const json = JSON.stringify(data);
+      await AsyncStorage.setItem(STORAGE_KEY, json);
+    } catch (e) {
+      console.error("Ошибка при сохранении групп в хранилище:", e);
+    }
+  };
+
+  const loadGroupsFromStorage = async () => {
+    try {
+      const json = await AsyncStorage.getItem(STORAGE_KEY);
+      return json != null ? JSON.parse(json) : [];
+    } catch (e) {
+      console.error("Ошибка при загрузке групп из хранилища:", e);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      const savedGroups = await loadGroupsFromStorage();
+      setGroups(savedGroups);
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    saveGroupsToStorage(groups);
+  }, [groups]);
 
   useEffect(() => {
     async function prepare() {
@@ -40,11 +73,14 @@ export const NoteProvider = ({ children }) => {
 
     const loadNotes = async () => {
       try {
-        const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          "https://notepad.faceqd.site/api/v1/notes",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) throw new Error("Error loading notes");
 
@@ -91,10 +127,14 @@ export const NoteProvider = ({ children }) => {
       if (!response.ok) {
         throw new Error("Error adding note to server");
       }
+      const serverNote = await response.json();
 
-      const createdNote = await response.json();
+      const newNote = {
+        ...note,
+        id: serverNote.id,
+      };
 
-      const newNotes = [createdNote, ...notes];
+      const newNotes = [newNote, ...notes];
       setNotes(newNotes);
       saveNotesToStorage(newNotes);
     } catch (error) {
@@ -158,7 +198,18 @@ export const NoteProvider = ({ children }) => {
   };
 
   return (
-    <NoteContext.Provider value={{ notes, addNote, updateNote, deleteNotes, updateToken, token, groups, setGroups }}>
+    <NoteContext.Provider
+      value={{
+        notes,
+        addNote,
+        updateNote,
+        deleteNotes,
+        updateToken,
+        token,
+        groups,
+        setGroups,
+      }}
+    >
       {children}
     </NoteContext.Provider>
   );

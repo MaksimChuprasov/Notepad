@@ -38,13 +38,17 @@ const NoteView = ({ navigation, route }) => {
     const [isModalVisible, setModalVisible] = useState(false);
     const [tasks, setTasks] = useState([]);
     const [searchCollaborator, setSearchCollaborator] = useState('');
+    const [selectedGroupIds, setSelectedGroupIds] = useState([]);
 
     const { groups } = useContext(NoteContext);
 
-    useEffect(() => {
-        console.log('Группы:', groups);
-    }, [groups]);
-
+    const handleGroupSelect = (groupId) => {
+        setSelectedGroupIds(prev =>
+            prev.includes(groupId)
+                ? prev.filter(id => id !== groupId) 
+                : [...prev, groupId]             
+        );
+    };
 
     // Function to add a new task
     const addTask = () => {
@@ -91,6 +95,7 @@ const NoteView = ({ navigation, route }) => {
             setTasks(note.tasks || []);
             setFiles(note.files || []);
             setSelectedImages((note.images || []).map(img => img.uri));
+            setSelectedGroupIds(note.selectedGroupIds || []);
         }
     }, [route.params]);
 
@@ -117,6 +122,7 @@ const NoteView = ({ navigation, route }) => {
             id: initialNoteToEdit ? initialNoteToEdit.id : Date.now().toString(),
             title,
             text,
+            selectedGroupIds,
             /* files, */
             tasks,
             /* images: selectedImages.map(uri => ({
@@ -149,6 +155,7 @@ const NoteView = ({ navigation, route }) => {
         return (
             text !== lastSavedNote.text ||
             title !== lastSavedNote.title ||
+            JSON.stringify(selectedGroupIds) !== JSON.stringify(lastSavedNote.selectedGroupIds || []) ||
             JSON.stringify(files) !== JSON.stringify(lastSavedNote.files || []) ||
             JSON.stringify(tasks) !== JSON.stringify(lastSavedNote.tasks || []) ||
             JSON.stringify(selectedImages) !== JSON.stringify(imagesFromSaved)
@@ -164,12 +171,12 @@ const NoteView = ({ navigation, route }) => {
         });
 
         return unsubscribe;
-    }, [navigation, text, title, files, tasks, selectedImages]);
+    }, [navigation, text, title, files, tasks, selectedImages, selectedGroupIds]);
 
     useEffect(() => {
         const changed = checkIfNoteChanged();
         setIsSaved(!changed);
-    }, [text, title, files, tasks, selectedImages, lastSavedNote]);
+    }, [text, title, files, tasks, selectedImages, lastSavedNote, selectedGroupIds]);
 
     const clearEditorAndExit = () => {
         setTitle('');
@@ -181,6 +188,7 @@ const NoteView = ({ navigation, route }) => {
         setShowSaveModal(false);
         setIsSaved(false);
         setTitleError('');
+        setSelectedGroupIds([])
         if (navigation.canGoBack()) {
             navigation.goBack();
         } else {
@@ -188,18 +196,18 @@ const NoteView = ({ navigation, route }) => {
         }
     };
 
-    const decodeFileNameFromUri = (uri) => {
-        try {
-            const parts = uri.split('document/');
-            if (parts.length < 2) return 'unknown';
-            const encodedPath = parts[1];
-            const decodedPath = decodeURIComponent(encodedPath);
-            const fileName = decodedPath.substring(decodedPath.lastIndexOf('/') + 1);
-            return fileName;
-        } catch {
-            return 'unknown';
-        }
-    };
+    /*  const decodeFileNameFromUri = (uri) => {
+         try {
+             const parts = uri.split('document/');
+             if (parts.length < 2) return 'unknown';
+             const encodedPath = parts[1];
+             const decodedPath = decodeURIComponent(encodedPath);
+             const fileName = decodedPath.substring(decodedPath.lastIndexOf('/') + 1);
+             return fileName;
+         } catch {
+             return 'unknown';
+         }
+     }; */
 
     /*  const selectFiles = async () => {
          try {
@@ -365,9 +373,9 @@ const NoteView = ({ navigation, route }) => {
         );
 
         return () => backHandler.remove();
-    }, [isFocused, text, title, files, noteToEdit]);
+    }, [isFocused, text, title, files, noteToEdit, selectedGroupIds]);
 
-    const addPhoto = async () => {
+    /* const addPhoto = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
                 allowsEditing: false,
@@ -380,7 +388,7 @@ const NoteView = ({ navigation, route }) => {
         } catch (error) {
             console.error("Error selecting photo:", error);
         }
-    };
+    }; */
 
     const styles = StyleSheet.create({
         container: {
@@ -396,27 +404,49 @@ const NoteView = ({ navigation, route }) => {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaView className=" h-full pt-9 bg-white">
                 <View className="flex-1">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity className="mx-2" onPress={handleBackPress}>
-                            <Image
-                                source={require('../images/back.png')}
-                                className="w-8 h-8 mt-4"
+                    <View>
+                        <View className="flex-row items-center">
+                            <TouchableOpacity className="mx-2" onPress={handleBackPress}>
+                                <Image
+                                    source={require('../images/back.png')}
+                                    className="w-8 h-8 mt-4"
+                                />
+                            </TouchableOpacity>
+
+                            <TitleInput className="w-full"
+                                value={title}
+                                onChangeText={(text) => {
+                                    setTitle(text);
+                                    if (text.trim()) setTitleError('');
+                                }}
+                                errorMessage={titleError}
                             />
-                        </TouchableOpacity>
-                        <TitleInput className="w-full"
-                            value={title}
-                            onChangeText={(text) => {
-                                setTitle(text);
-                                if (text.trim()) setTitleError('');
-                            }}
-                            errorMessage={titleError}
-                        />
-                        <TouchableOpacity className="mx-2" onPress={saveNote}>
-                            <Image
-                                source={require('../images/saveBtn.png')}
-                                className="w-8 h-8 mt-4"
-                            />
-                        </TouchableOpacity>
+
+                            <TouchableOpacity className="mx-2" onPress={saveNote}>
+                                <Image
+                                    source={require('../images/saveBtn.png')}
+                                    className="w-8 h-8 mt-4"
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Выбранные группы */}
+                        {selectedGroupIds.length > 0 && (
+                            <View className="mt-2 px-4">
+                                <Text className="text-gray-600 mb-1">Selected groups:</Text>
+                                {groups
+                                    .filter(group => selectedGroupIds.includes(group.id))
+                                    .map(group => (
+                                        <View key={group.id} className="flex-row items-center mb-1">
+                                            <Image
+                                                source={require('../images/group-check.png')}
+                                                className="w-4 h-4 mr-2"
+                                            />
+                                            <Text>{group.name}</Text>
+                                        </View>
+                                    ))}
+                            </View>
+                        )}
                     </View>
                     <ScrollView className='flex-1 mb-4' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
                         <TextInput
@@ -757,19 +787,22 @@ const NoteView = ({ navigation, route }) => {
                                             <ScrollView>
                                                 {groups.map((group, id) => {
                                                     const isLast = id === groups.length - 1;
+                                                    const isSelected = selectedGroupIds.includes(group.id);
 
                                                     return (
                                                         <TouchableOpacity
                                                             key={group.id}
                                                             className={`py-2 ${!isLast ? 'border-b border-gray-300' : ''}`}
-                                                            onPress={() => {
-                                                                // Действие при выборе
-                                                                console.log('Выбран:', group.name);
-                                                            }}
+                                                            onPress={() => handleGroupSelect(group.id)}
+
                                                         >
                                                             <View className="flex-row">
                                                                 <Image
-                                                                    source={require('../images/add-group.png')}
+                                                                    source={
+                                                                        isSelected
+                                                                            ? require('../images/group-check.png')
+                                                                            : require('../images/add-group.png')
+                                                                    }
                                                                     className="w-5 h-5 mr-2"
                                                                 />
                                                                 <Text>{group.name}</Text>

@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { View, TouchableOpacity, Image, Text } from 'react-native';
 import NoteContext from '../app/NoteContext';
 
-const CustomTabBar = ({ state, descriptors, navigation }) => {
+const CustomTabBar = ({ state, navigation }) => {
 
     const currentRouteName = state.routes[state.index].name;
     const { addNote, updateNote } = useContext(NoteContext);
@@ -40,7 +40,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
                 {/* Second button*/}
                 <TouchableOpacity
-                    disabled
                     className="bg-white items-center"
                     onPress={() => navigation.navigate('Social')}
                 >

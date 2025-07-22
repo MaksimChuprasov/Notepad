@@ -3,6 +3,8 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, Sa
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 const SocialView = () => {
@@ -14,6 +16,7 @@ const SocialView = () => {
     const [editingGroupId, setEditingGroupId] = useState(null);
     const [collaborators, setCollaborators] = useState([]);
 
+    
     const addCollaborator = (groupId) => {
         setGroups(prev =>
             prev.map(group =>
@@ -102,9 +105,6 @@ const SocialView = () => {
             } else {
                 setSelectedGroups(prev => [...prev, group.id]);
             }
-        } else {
-            // Возможно откроется страница с заметками внутри группы
-            // navigation.navigate('GroupNotes', { group });
         }
     };
 
@@ -181,15 +181,15 @@ const SocialView = () => {
                         <FlatList
                             data={filteredGroups}
                             keyExtractor={(item) => item.id}
-                            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8 }}
+                            contentContainerStyle={{ paddingHorizontal: 6, paddingVertical: 8 }}
                             renderItem={({ item }) => (
                                 <Pressable
                                     onLongPress={() => handleLongPress(item)}
                                     onPress={() => handlePress(item)}
-                                    className="mb-2 border-2 border-transparent"
+                                    className="mb-2"
                                 >
                                     <View
-                                        className={`p-4 bg-white rounded-xl shadow-md ${selectedGroups.includes(item.id) ? 'border-2 border-blue-500' : ''}`}
+                                        className={`p-3 bg-white rounded-xl shadow-md border-2 border-transparent ${selectedGroups.includes(item.id) ? 'border-2 border-blue-500' : ''}`}
                                     >
                                         <View className='flex flex-row items-center justify-between'>
                                             <Pressable

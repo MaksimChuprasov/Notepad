@@ -120,7 +120,7 @@ const HomeView = ({ navigation }) => {
                                 >
                                     <Image
                                         source={require('../images/bin.png')}
-                                        className="w-10 h-10"
+                                        className="w-8 h-8"
                                     />
                                 </TouchableOpacity>
                             )}
