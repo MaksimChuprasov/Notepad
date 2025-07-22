@@ -85,8 +85,22 @@ export const NoteProvider = ({ children }) => {
         if (!response.ok) throw new Error("Error loading notes");
 
         const apiNotes = await response.json();
-        setNotes(apiNotes);
-        saveNotesToStorage(apiNotes);
+
+        // Загружаем локальные заметки
+        const storedJson = await AsyncStorage.getItem("notes");
+        const localNotes = storedJson ? JSON.parse(storedJson) : [];
+
+        // Сливаем заметки по id, сохраняем selectedGroupIds
+        const mergedNotes = apiNotes.map((apiNote) => {
+          const local = localNotes.find((n) => n.id === apiNote.id);
+          return {
+            ...apiNote,
+            selectedGroupIds: local?.selectedGroupIds || [],
+          };
+        });
+
+        setNotes(mergedNotes);
+        saveNotesToStorage(mergedNotes);
       } catch (error) {
         console.warn("API is not available, loading from storage:", error);
         try {
@@ -100,6 +114,7 @@ export const NoteProvider = ({ children }) => {
       }
     };
 
+    loadNotesFromStorage();
     loadNotes();
   }, [token]);
 
@@ -108,6 +123,18 @@ export const NoteProvider = ({ children }) => {
       await AsyncStorage.setItem("notes", JSON.stringify(newNotes));
     } catch (error) {
       console.error("Error saving notes:", error);
+    }
+  };
+
+  const loadNotesFromStorage = async () => {
+    try {
+      const json = await AsyncStorage.getItem("notes");
+      if (json) {
+        const savedNotes = JSON.parse(json);
+        setNotes(savedNotes);
+      }
+    } catch (error) {
+      console.error("Error loading notes:", error);
     }
   };
 

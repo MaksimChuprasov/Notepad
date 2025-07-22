@@ -8,6 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import TitleInput from '../components/TitleInput.jsx'
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NoteView = ({ navigation, route }) => {
     const { StorageAccessFramework } = FileSystem;
@@ -40,13 +42,26 @@ const NoteView = ({ navigation, route }) => {
     const [searchCollaborator, setSearchCollaborator] = useState('');
     const [selectedGroupIds, setSelectedGroupIds] = useState([]);
 
+    const insets = useSafeAreaInsets();
+
     const { groups } = useContext(NoteContext);
+
+    useEffect(() => {
+        const loadSelectedGroupIds = async () => {
+            const storedIds = await AsyncStorage.getItem('selectedGroupIds');
+            if (storedIds) {
+                setSelectedGroupIds(JSON.parse(storedIds));
+            }
+        };
+
+        loadSelectedGroupIds();
+    }, []);
 
     const handleGroupSelect = (groupId) => {
         setSelectedGroupIds(prev =>
             prev.includes(groupId)
-                ? prev.filter(id => id !== groupId) 
-                : [...prev, groupId]             
+                ? prev.filter(id => id !== groupId)
+                : [...prev, groupId]
         );
     };
 
@@ -178,7 +193,7 @@ const NoteView = ({ navigation, route }) => {
         setIsSaved(!changed);
     }, [text, title, files, tasks, selectedImages, lastSavedNote, selectedGroupIds]);
 
-    const clearEditorAndExit = () => {
+    const clearEditorAndExit = (goBack = true) => {
         setTitle('');
         setText('');
         setFiles([]);
@@ -188,12 +203,20 @@ const NoteView = ({ navigation, route }) => {
         setShowSaveModal(false);
         setIsSaved(false);
         setTitleError('');
-        setSelectedGroupIds([])
-        if (navigation.canGoBack()) {
-            navigation.goBack();
-        } else {
-            navigation.navigate('Home');
+        setSelectedGroupIds([]);
+
+        if (goBack) {
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate('Home');
+            }
         }
+    };
+
+    const handleExitWithoutSaving = () => {
+        setShowSaveModal(false);
+        clearEditorAndExit(true);
     };
 
     /*  const decodeFileNameFromUri = (uri) => {
@@ -330,20 +353,6 @@ const NoteView = ({ navigation, route }) => {
          setImageToDeleteIndex(null);
      };*/
 
-    const handleExitWithoutSaving = () => {
-        setShowSaveModal(false);
-        setIsNavigating(true);
-
-        clearEditorAndExit();
-
-        setTimeout(() => {
-            if (navigation.canGoBack()) {
-                navigation.goBack();
-            } else {
-                navigation.navigate('Home');
-            }
-        }, 100);
-    };
     const handleOutsidePress = () => {
         if (showSaveModal) {
             setShowSaveModal(false);
@@ -402,7 +411,9 @@ const NoteView = ({ navigation, route }) => {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaView className=" h-full pt-9 bg-white">
+            <View style={{
+                paddingTop: insets.top,
+            }} className=" h-full bg-white">
                 <View className="flex-1">
                     <View>
                         <View className="flex-row items-center">
@@ -437,12 +448,12 @@ const NoteView = ({ navigation, route }) => {
                                 {groups
                                     .filter(group => selectedGroupIds.includes(group.id))
                                     .map(group => (
-                                        <View key={group.id} className="flex-row items-center mb-1">
+                                        <View key={group.id} className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 border border-gray-200 shadow-sm">
                                             <Image
                                                 source={require('../images/group-check.png')}
                                                 className="w-4 h-4 mr-2"
                                             />
-                                            <Text>{group.name}</Text>
+                                            <Text className='pr-4' numberOfLines={1} ellipsizeMode="tail">{group.name}</Text>
                                         </View>
                                     ))}
                             </View>
@@ -884,7 +895,7 @@ const NoteView = ({ navigation, route }) => {
 
                 </View>
 
-            </SafeAreaView >
+            </View >
         </GestureHandlerRootView >
     );
 };

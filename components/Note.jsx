@@ -1,5 +1,5 @@
-import { View, Text } from 'react-native';
-import React, {useEffect} from 'react';
+import { View, Text, Image } from 'react-native';
+import React, { useEffect } from 'react';
 import { format } from 'date-fns';
 
 const Note = ({ note, formattedDate, isSelected }) => {
@@ -9,17 +9,25 @@ const Note = ({ note, formattedDate, isSelected }) => {
         <View
             className={`flex-1 bg-white rounded-3xl p-4 mb-4 border
     ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 160 }}>
-            {/* Title */}
-            {note?.title && (
-                <Text
-                    className="text-lg font-bold mb-2 text-gray-900"
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                >
-                    {note.title}
-                </Text>
-            )}
+            <View className='flex flex-row justify-between items-center mb-2 mr-4'>
+                {/* Title */}
+                {note?.title && (
+                    <Text
+                        className="text-lg font-bold text-gray-900 w-full"
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >
+                        {note.title}
+                    </Text>
+                )}
+                {note.selectedGroupIds.length > 0 && (
+                    <Image
+                        source={require('../images/group-check.png')}
+                        className="w-5 h-5"
+                    />
+                )}
 
+            </View>
             {/* Text */}
             <Text
                 className="text-gray-600 text-sm mb-2 flex-shrink"
@@ -74,6 +82,7 @@ const Note = ({ note, formattedDate, isSelected }) => {
                 ) : (
                     <View className="w-[100px]" />
                 )}
+
             </View>
         </View>
     );

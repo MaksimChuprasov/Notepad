@@ -1,11 +1,12 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, ScrollView, SafeAreaView, StatusBar, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, ScrollView, StatusBar, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NoteContext from '@/app/NoteContext';
 import AdvancedNativeAd from '../components/AdvancedNativeAd'
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import mobileAds from 'react-native-google-mobile-ads';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const ProfileView = () => {
@@ -14,6 +15,8 @@ const ProfileView = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    const insets = useSafeAreaInsets();
 
     const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-5613402667721593/7654096833';
 
@@ -203,9 +206,11 @@ const ProfileView = () => {
     };
 
     return isLoggedIn ? (
-        <SafeAreaView className="px-5 relative h-full">
-            <StatusBar style="dark" />
-            <View className='flex-row justify-between items-start mt-10'>
+        <View style={{
+            paddingTop: insets.top,
+        }}
+            className="px-5 relative h-full">
+            <View className='flex-row justify-between items-start mt-2'>
                 <View>
                     <View className='flex-row items-start w-3/4'>
                         <Text className='font-bold text-3xl' numberOfLines={2} ellipsizeMode="tail">{name}</Text>
@@ -237,10 +242,9 @@ const ProfileView = () => {
             </View>
             {/* <AdvancedNativeAd/> */}
 
-        </SafeAreaView>
+        </View>
     ) : (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             className="flex-1 bg-white"
         >
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
