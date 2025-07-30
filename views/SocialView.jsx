@@ -3,99 +3,135 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, Sa
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
 const SocialView = () => {
+    const { groups, setGroups, addGroup, updateGroup, deleteGroups } = useContext(NoteContext);
     const [searchQuery, setSearchQuery] = useState('');
+    const [filteredGroups, setFilteredGroups] = useState([]);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { groups, setGroups } = useContext(NoteContext);
-    const [filteredGroups, setFilteredGroups] = useState([]);
     const [editingGroupId, setEditingGroupId] = useState(null);
-    const [collaborators, setCollaborators] = useState([]);
+    const [showSavedMessage, setShowSavedMessage] = useState(false);
 
-    
-    const addCollaborator = (groupId) => {
-        setGroups(prev =>
-            prev.map(group =>
-                group.id === groupId
-                    ? {
-                        ...group,
-                        collaborators: [
-                            ...(group.collaborators || []),
-                            { id: Date.now().toString(), name: '' }
-                        ]
-                    }
-                    : group
-            )
-        );
+    const isGroupValid = (group) => {
+        const hasName = group.name?.trim().length > 0;
+        const hasValidCollaborator = (group.collaborators || []).some(c => c.name?.trim().length > 0);
+        return hasName && hasValidCollaborator;
     };
 
-    const handleChangeCollaboratorName = (text, groupId, collabId) => {
-        setGroups(prev =>
-            prev.map(group =>
-                group.id === groupId
-                    ? {
-                        ...group,
-                        collaborators: (group.collaborators || []).map(collab =>
-                            collab.id === collabId ? { ...collab, name: text } : collab
-                        )
-                    }
-                    : group
-            )
-        );
-    };
-
-
-    useEffect(() => {
-        setFilteredGroups(groups);
-    }, [groups]);
-
+    // Фильтрация групп по поиску
     useEffect(() => {
         if (!searchQuery) {
             setFilteredGroups(groups);
         } else {
-            const filtered = groups.filter(group =>
-                group.name.toLowerCase().includes(searchQuery.toLowerCase())
+            const lower = searchQuery.toLowerCase();
+            setFilteredGroups(
+                groups.filter(group => (group.name || '').toLowerCase().includes(lower))
             );
-            setFilteredGroups(filtered);
         }
-    }, [searchQuery, groups]);
-
-    const addGroup = () => {
-        const newGroup = { id: Date.now().toString(), name: 'New group' };
-        setGroups(prev => [...prev, newGroup]);
-    };
-
-    const filterGroups = (list, query) => {
-        const lower = query.toLowerCase();
-        return list.filter(group =>
-            (group.name || '').toLowerCase().includes(lower)
-        );
-    };
-
-    useEffect(() => {
-        const filtered = filterGroups(groups, searchQuery);
-        setFilteredGroups(filtered);
     }, [searchQuery, groups]);
 
     useFocusEffect(
         React.useCallback(() => {
-            setFilteredGroups(filterGroups(groups, searchQuery));
+            if (!searchQuery) {
+                setFilteredGroups(groups);
+            } else {
+                const lower = searchQuery.toLowerCase();
+                setFilteredGroups(groups.filter(group => (group.name || '').toLowerCase().includes(lower)));
+            }
         }, [groups, searchQuery])
     );
 
+    // Управление режимом выбора групп
     useEffect(() => {
         if (selectedGroups.length === 0) setSelectMode(false);
     }, [selectedGroups]);
 
+    // Добавление новой группы через контекст
+    const handleAddGroup = () => {
+        const newGroup = {
+            id: Date.now().toString(),
+            name: 'New Group',
+            collaborators: [{ id: Date.now().toString(), name: '' }],
+            isDraft: true, // ⬅️ чтобы отличить несохранённую группу
+        };
+        setGroups(prev => [...prev, newGroup]); // локально
+    };
+
+    const saveGroupName = (groupId) => {
+        const groupToSave = groups.find(g => g.id === groupId);
+        if (!groupToSave || !groupToSave.name?.trim()) return;
+
+        const groupData = {
+            id: groupToSave.id,
+            name: groupToSave.name,
+            collaborators: groupToSave.collaborators || [],
+        };
+
+        if (groupToSave.isDraft) {
+            addGroup(groupData);
+        } else {
+            updateGroup(groupData);
+        }
+    };
+
+    // Изменение имени группы + обновление через API
+    const handleChangeGroupName = (text, groupId) => {
+        const updatedGroups = groups.map(group =>
+            group.id === groupId ? { ...group, name: text } : group
+        );
+        setGroups(updatedGroups); // только локально!
+    };
+
+    const handleChangeCollaboratorName = (text, groupId, collabId) => {
+        const updatedGroups = groups.map(group => {
+            if (group.id === groupId) {
+                const updatedCollaborators = (group.collaborators || []).map(collab =>
+                    collab.id === collabId ? { ...collab, name: text } : collab
+                );
+                return { ...group, collaborators: updatedCollaborators };
+            }
+            return group;
+        });
+        setGroups(updatedGroups); // только локально!
+    };
+
+    const addCollaborator = (groupId) => {
+        const newCollab = { id: Date.now().toString(), name: '' };
+
+        const updatedGroups = groups.map(group => {
+            if (group.id === groupId) {
+                const newCollaborators = [...(group.collaborators || []), newCollab];
+
+                return { ...group, collaborators: newCollaborators };
+            }
+            return group;
+        });
+
+        setGroups(updatedGroups);
+    };
+
+    const handleDeleteCollaborator = (groupId, collabId) => {
+        const updatedGroups = groups.map(group => {
+            if (group.id === groupId) {
+                const filteredCollaborators = (group.collaborators || []).filter(c => c.id !== collabId);
+
+                return { ...group, collaborators: filteredCollaborators };
+            }
+            return group;
+        });
+        setGroups(updatedGroups);
+    };
+
+    // Управление выбором групп (для удаления)
     const handleLongPress = (group) => {
         if (!selectMode) setSelectMode(true);
         if (!selectedGroups.includes(group.id)) {
             setSelectedGroups(prev => [...prev, group.id]);
         }
+        console.log(groups)
     };
 
     const handlePress = (group) => {
@@ -108,12 +144,11 @@ const SocialView = () => {
         }
     };
 
-    const deleteGroups = (idsToDelete) => {
-        setGroups(prev => prev.filter(group => !idsToDelete.includes(group.id)));
-    };
-
+    // Удаление выбранных групп через контекст
     const handleDeleteSelected = () => {
-        deleteGroups(selectedGroups);
+        if (selectedGroups.length === 0) return;
+
+        deleteGroups(selectedGroups); // вызов из контекста
         setSelectedGroups([]);
         setSelectMode(false);
     };
@@ -123,27 +158,6 @@ const SocialView = () => {
             setSelectedGroups([]);
             setSelectMode(false);
         }
-    };
-
-    const handleChangeGroupName = (text, groupId) => {
-        setGroups(prev =>
-            prev.map(group =>
-                group.id === groupId ? { ...group, name: text } : group
-            )
-        );
-    };
-
-    const handleDeleteCollaborator = (groupId, collabId) => {
-        setGroups(prevGroups =>
-            prevGroups.map(group =>
-                group.id === groupId
-                    ? {
-                        ...group,
-                        collaborators: group.collaborators.filter(c => c.id !== collabId),
-                    }
-                    : group
-            )
-        );
     };
 
     return (
@@ -160,7 +174,7 @@ const SocialView = () => {
                                 onChangeText={setSearchQuery}
                             />
                             {selectedGroups.length === 0 && (
-                                <TouchableOpacity onPress={addGroup} className="ml-2">
+                                <TouchableOpacity onPress={handleAddGroup} className="ml-2">
                                     <Image
                                         source={require('../images/add-group.png')}
                                         className="w-10 h-10"
@@ -224,6 +238,20 @@ const SocialView = () => {
                                                     )}
                                                 </View>
                                             </Pressable>
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    if (isGroupValid(item)) {
+                                                        saveGroupName(item.id);
+                                                        setShowSavedMessage(true);
+                                                        setTimeout(() => setShowSavedMessage(false), 2000); // скрыть через 2 секунды
+                                                    }
+                                                }}
+                                                className="ml-2"
+                                                disabled={!isGroupValid(item)}
+                                                style={{ opacity: isGroupValid(item) ? 1 : 0.4 }}
+                                            >
+                                                <Image source={require('../images/saveBtn.png')} className="w-8 h-8" />
+                                            </TouchableOpacity>
                                             <TouchableOpacity onPress={() => addCollaborator(item.id)} className="ml-2">
                                                 <Image
                                                     source={require('../images/collaborator.png')}
@@ -239,10 +267,10 @@ const SocialView = () => {
                                                         onChangeText={(text) =>
                                                             handleChangeCollaboratorName(text, item.id, collab.id)
                                                         }
-                                                        placeholder="Enter the collaborator"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 my-1 bg-white w-60"
+                                                        placeholder="example@example.com"
+                                                        className="border border-gray-300 rounded-md px-3 py-2 my-1 bg-white w-[275px]"
                                                     />
-                                                    <TouchableOpacity onPress={() => handleDeleteCollaborator(item.id, collab.id)} className="ml-[14px]">
+                                                    <TouchableOpacity onPress={() => handleDeleteCollaborator(item.id, collab.id)} className="ml-[6px]">
                                                         <Image
                                                             source={require('../images/bin.png')}
                                                             className="w-8 h-8"
@@ -256,6 +284,13 @@ const SocialView = () => {
                             )}
                             showsVerticalScrollIndicator={false}
                         />
+                        {showSavedMessage && (
+                            <View className="absolute bottom-5 left-0 right-0 items-center">
+                                <View className="bg-green-500 px-4 py-2 rounded-xl shadow-lg">
+                                    <Text className="text-white font-medium">Group saved</Text>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 </View>
             </TouchableWithoutFeedback>

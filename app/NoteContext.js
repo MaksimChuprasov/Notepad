@@ -71,6 +71,163 @@ export const NoteProvider = ({ children }) => {
   useEffect(() => {
     if (!token) return;
 
+    const loadGroups = async () => {
+      try {
+        const response = await fetch(
+          "https://notepad.faceqd.site/api/v1/groups",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) throw new Error("Error loading groups");
+
+        const apiGroups = await response.json();
+
+        // Загружаем локальные заметки
+        const storedJson = await AsyncStorage.getItem("notes");
+        const localGroups = storedJson ? JSON.parse(storedJson) : [];
+
+        // Сливаем заметки по id, сохраняем selectedGroupIds
+        const mergedGroups = apiGroups.map((apiGroup) => {
+          const local = localGroups.find((n) => n.id === apiGroup.id);
+          return {
+            ...apiGroup,
+            selectedGroupIds: local?.selectedGroupIds || [],
+          };
+        });
+
+        setGroups(mergedGroups);
+        saveGroupsToStorage(mergedGroups);
+      } catch (error) {
+        console.warn("API is not available, loading from storage:", error);
+        try {
+          const storedNotes = await AsyncStorage.getItem("groups");
+          if (storedNotes !== null) {
+            setGroups(JSON.parse(storedNotes));
+          }
+        } catch (storageError) {
+          console.error("Error loading from storage:", storageError);
+        }
+      }
+    };
+
+    loadGroupsFromStorage();
+    loadGroups();
+  }, [token]);
+
+  /* const addGroup = () => {
+    const newGroup = { id: Date.now().toString(), name: "New group" };
+    setGroups((prev) => [...prev, newGroup]);
+  }; */
+
+  const addGroup = async (group) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        "https://notepad.faceqd.site/api/v1/groups",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id: group.id,
+            name: group.name,
+            collaborators: group.collaborators,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.log("Response error text:", text);
+        throw new Error("Error adding group");
+      }
+
+      const data = await response.json(); // новая группа с id от сервера
+
+      const updatedGroups = groups.map((g) =>
+        g.id === group.id
+          ? { ...data, collaborators: data.collaborators || [] }
+          : g
+      );
+
+      setGroups(updatedGroups);
+      saveGroupsToStorage(updatedGroups);
+    } catch (error) {
+      console.error("Error adding group:", error);
+    }
+  };
+
+  const updateGroup = async (updatedGroup) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `https://notepad.faceqd.site/api/v1/groups/${updatedGroup.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updatedGroup),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Response error text:", errorText);
+        throw new Error("Error updating group on server");
+      }
+
+      const newGroups = groups.map((group) =>
+        group.id === updatedGroup.id ? updatedGroup : group
+      );
+
+      setGroups(newGroups);
+      saveGroupsToStorage(newGroups);
+    } catch (error) {
+      console.error("Error updating group:", error);
+    }
+  };
+
+  const deleteGroups = async (idsToDelete) => {
+    if (!token) return;
+
+    try {
+      // Отправляем запросы на удаление для каждого id
+      await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`https://notepad.faceqd.site/api/v1/groups/${id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        )
+      );
+
+      // Удаляем из локального состояния группы с этими id
+      const updatedGroups = groups.filter(
+        (group) => !idsToDelete.includes(group.id)
+      );
+
+      setGroups(updatedGroups);
+      saveGroupsToStorage(updatedGroups);
+    } catch (error) {
+      console.error("Error deleting groups:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+
     const loadNotes = async () => {
       try {
         const response = await fetch(
@@ -235,6 +392,9 @@ export const NoteProvider = ({ children }) => {
         token,
         groups,
         setGroups,
+        addGroup,
+        updateGroup,
+        deleteGroups,
       }}
     >
       {children}
