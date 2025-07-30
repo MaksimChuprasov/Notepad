@@ -120,8 +120,8 @@ const ProfileView = () => {
             console.error(e);
             Alert.alert('Ошибка', e.message || 'Не удалось получить ссылку авторизации');
         }
-    };
- */
+    }; */
+
 
     const handleGoogleLogin = async () => {
         try {
