@@ -225,52 +225,48 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  const loadNotes = async () => {
+    try {
+      const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Error loading notes");
+
+      const apiNotes = await response.json();
+
+      // Загружаем локальные заметки
+      const storedJson = await AsyncStorage.getItem("notes");
+      const localNotes = storedJson ? JSON.parse(storedJson) : [];
+
+      // Сливаем заметки по id, сохраняем selectedGroupIds
+      const mergedNotes = apiNotes.map((apiNote) => {
+        const local = localNotes.find((n) => n.id === apiNote.id);
+        return {
+          ...apiNote,
+          selectedGroupIds: local?.selectedGroupIds || [],
+        };
+      });
+
+      setNotes(mergedNotes);
+      saveNotesToStorage(mergedNotes);
+    } catch (error) {
+      console.warn("API is not available, loading from storage:", error);
+      try {
+        const storedNotes = await AsyncStorage.getItem("notes");
+        if (storedNotes !== null) {
+          setNotes(JSON.parse(storedNotes));
+        }
+      } catch (storageError) {
+        console.error("Error loading from storage:", storageError);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
-
-    const loadNotes = async () => {
-      try {
-        const response = await fetch(
-          "https://notepad.faceqd.site/api/v1/notes",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) throw new Error("Error loading notes");
-
-        const apiNotes = await response.json();
-
-        // Загружаем локальные заметки
-        const storedJson = await AsyncStorage.getItem("notes");
-        const localNotes = storedJson ? JSON.parse(storedJson) : [];
-
-        // Сливаем заметки по id, сохраняем selectedGroupIds
-        const mergedNotes = apiNotes.map((apiNote) => {
-          const local = localNotes.find((n) => n.id === apiNote.id);
-          return {
-            ...apiNote,
-            selectedGroupIds: local?.selectedGroupIds || [],
-          };
-        });
-
-        setNotes(mergedNotes);
-        saveNotesToStorage(mergedNotes);
-      } catch (error) {
-        console.warn("API is not available, loading from storage:", error);
-        try {
-          const storedNotes = await AsyncStorage.getItem("notes");
-          if (storedNotes !== null) {
-            setNotes(JSON.parse(storedNotes));
-          }
-        } catch (storageError) {
-          console.error("Error loading from storage:", storageError);
-        }
-      }
-    };
-
     loadNotesFromStorage();
     loadNotes();
   }, [token]);
@@ -343,6 +339,7 @@ export const NoteProvider = ({ children }) => {
       );
 
       if (!response.ok) {
+        console.log(response);
         throw new Error("Error updating note on server");
       }
 
@@ -385,6 +382,7 @@ export const NoteProvider = ({ children }) => {
     <NoteContext.Provider
       value={{
         notes,
+        loadNotes,
         addNote,
         updateNote,
         deleteNotes,

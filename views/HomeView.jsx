@@ -10,7 +10,11 @@ const HomeView = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes, addNote, updateNote, deleteNotes } = useContext(NoteContext);
+    const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes } = useContext(NoteContext);
+
+    const refreshPage = () => {
+        loadNotes();
+    };
 
     useEffect(() => {
         setFilteredNotes(contextNotes);
@@ -146,6 +150,17 @@ const HomeView = ({ navigation }) => {
                             showsVerticalScrollIndicator={false}
                         />
                     </View>
+                    <TouchableOpacity
+                        onPress={refreshPage}
+                        className="absolute bottom-4 right-4 w-14 h-14 bg-white rounded-full shadow-lg items-center justify-center border border-gray-400"
+                        activeOpacity={0.7}
+                    >
+                        <Image
+                            source={require('../images/refresh.png')}
+                            className="w-8 h-8"
+                            resizeMode="contain"
+                        />
+                    </TouchableOpacity>
                 </View>
             </TouchableWithoutFeedback>
         </SafeAreaView>

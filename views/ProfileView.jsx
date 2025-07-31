@@ -18,7 +18,7 @@ const ProfileView = () => {
 
     const insets = useSafeAreaInsets();
 
-    const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-5613402667721593/7654096833';
+    /* const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-5613402667721593/7654096833'; */
 
     useEffect(() => {
         mobileAds()
@@ -231,7 +231,7 @@ const ProfileView = () => {
                     />
                 </TouchableOpacity>
             </View>
-            <View className='absolute bottom-0'>
+            {/* <View className='absolute bottom-0'>
                 <BannerAd
                     unitId={adUnitId}
                     size={BannerAdSize.ADAPTIVE_BANNER}
@@ -239,7 +239,7 @@ const ProfileView = () => {
                         requestNonPersonalizedAdsOnly: true,
                     }}
                 />
-            </View>
+            </View> */}
             {/* <AdvancedNativeAd/> */}
 
         </View>
