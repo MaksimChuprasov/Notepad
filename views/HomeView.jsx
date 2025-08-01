@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,12 @@ const HomeView = ({ navigation }) => {
     const refreshPage = () => {
         loadNotes();
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            refreshPage();
+        }, [])
+    );
 
     useEffect(() => {
         setFilteredNotes(contextNotes);

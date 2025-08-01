@@ -1,6 +1,10 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SplashScreen from "expo-splash-screen";
+import { registerForPushNotifications } from "../hooks/registerForPushNotifications";
+import { Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const NoteContext = createContext();
 
@@ -10,6 +14,141 @@ export const NoteProvider = ({ children }) => {
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState(null);
   const [groups, setGroups] = useState([]);
+  const [expoPushToken, setExpoPushToken] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+
+  const isSigningInRef = useRef(false);
+
+  const handleGoogleLogin = async () => {
+    if (isSigningInRef.current) {
+      console.log("Google sign-in уже выполняется, ждите...");
+      return; // блокируем повторный вызов
+    }
+    isSigningInRef.current = true;
+
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const id_token = userInfo.idToken || userInfo.data?.idToken;
+
+      const response = await fetch(
+        "https://notepad.faceqd.site/api/v1/auth/google-token",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id_token }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Authorization error: ${text}`);
+      }
+
+      const data = await response.json();
+
+      await AsyncStorage.setItem("userToken", data.token);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(data.user));
+
+      updateToken(data.token);
+      setIsLoggedIn(true);
+      setName(data.user.name);
+      setEmail(data.user.email);
+    } catch (error) {
+      console.error("❌ Google login error", error);
+    } finally {
+      isSigningInRef.current = false; // снимаем блокировку после завершения
+    }
+  };
+
+  const handleLogOut = async () => {
+    await AsyncStorage.removeItem("userToken");
+    await AsyncStorage.removeItem("userInfo");
+    updateToken(null);
+    setIsLoggedIn(false);
+    setName("");
+    setEmail("");
+    await GoogleSignin.signOut();
+  };
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        "890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com",
+      offlineAccess: true,
+    });
+
+    const checkToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userToken");
+        if (token) {
+          setIsLoggedIn(true);
+          const userInfo = await AsyncStorage.getItem("userInfo");
+          if (userInfo) {
+            const user = JSON.parse(userInfo);
+            setName(user.name);
+            setEmail(user.email);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading token:", e);
+      }
+    };
+
+    checkToken();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
+    }
+  }, []);
+
+  const hasSavedPushToken = useRef(false);
+
+  useEffect(() => {
+    if (token && !hasSavedPushToken.current) {
+      hasSavedPushToken.current = true;
+      saveToken();
+    }
+  }, [token]);
+
+  const saveToken = async () => {
+    try {
+      const expoToken = await registerForPushNotifications();
+      console.log("Token from registerForPushNotifications:", expoToken);
+
+      if (expoToken) {
+        setExpoPushToken(expoToken);
+
+        const expoResponse = await Notifications.getExpoPushTokenAsync();
+        console.log("Token from getExpoPushTokenAsync:", expoResponse);
+
+        const response = await fetch(
+          "https://notepad.faceqd.site/api/v1/save-token",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ expo_token: expoResponse.data }),
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Ошибка при сохранении токена:", error);
+    }
+  };
 
   const STORAGE_KEY = "groups_data";
 
@@ -307,18 +446,28 @@ export const NoteProvider = ({ children }) => {
       if (!response.ok) {
         throw new Error("Error adding note to server");
       }
-      const serverNote = await response.json();
 
+      const serverNote = await response.json();
       const newNote = {
         ...note,
-        id: serverNote.id,
+        id: serverNote.id, // ID от сервера
       };
 
       const newNotes = [newNote, ...notes];
       setNotes(newNotes);
       saveNotesToStorage(newNotes);
     } catch (error) {
-      console.error("Error adding note:", error);
+      console.warn("Ошибка при добавлении заметки, сохраняем локально:", error);
+
+      const fallbackNote = {
+        ...note,
+        id: Date.now().toString(), // временный id
+        unsynced: true, // можно использовать для последующей синхронизации
+      };
+
+      const newNotes = [fallbackNote, ...notes];
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
     }
   };
 
@@ -339,7 +488,6 @@ export const NoteProvider = ({ children }) => {
       );
 
       if (!response.ok) {
-        console.log(response);
         throw new Error("Error updating note on server");
       }
 
@@ -349,14 +497,66 @@ export const NoteProvider = ({ children }) => {
       setNotes(newNotes);
       saveNotesToStorage(newNotes);
     } catch (error) {
-      console.error("Error updating note:", error);
+      console.warn("Ошибка при обновлении заметки, обновляем локально:", error);
+
+      const newNotes = notes.map((note) =>
+        note.id === updatedNote.id ? { ...updatedNote, unsynced: true } : note
+      );
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
     }
   };
 
   const deleteNotes = async (idsToDelete) => {
     if (!token) return;
 
+    // 1. Удаляем локально
+    const updatedNotes = notes.filter((note) => !idsToDelete.includes(note.id));
+    setNotes(updatedNotes);
+    saveNotesToStorage(updatedNotes);
+
     try {
+      // 2. Пробуем удалить с сервера
+      await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        )
+      );
+    } catch (error) {
+      console.warn(
+        "Удаление с сервера не удалось, будет повторено позже:",
+        error
+      );
+
+      // 3. Сохраняем список отложенных удалений
+      try {
+        const existing = await AsyncStorage.getItem("deletedNoteIds");
+        const existingIds = existing ? JSON.parse(existing) : [];
+        const merged = [...new Set([...existingIds, ...idsToDelete])];
+        await AsyncStorage.setItem("deletedNoteIds", JSON.stringify(merged));
+      } catch (e) {
+        console.error(
+          "Ошибка при сохранении удалённых заметок для синхронизации:",
+          e
+        );
+      }
+    }
+  };
+
+  const syncDeletedNotes = async () => {
+    if (!token) return;
+
+    try {
+      const stored = await AsyncStorage.getItem("deletedNoteIds");
+      const idsToDelete = stored ? JSON.parse(stored) : [];
+
+      if (idsToDelete.length === 0) return;
+
       await Promise.all(
         idsToDelete.map((id) =>
           fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
@@ -368,15 +568,18 @@ export const NoteProvider = ({ children }) => {
         )
       );
 
-      const updatedNotes = notes.filter(
-        (note) => !idsToDelete.includes(note.id)
-      );
-      setNotes(updatedNotes);
-      saveNotesToStorage(updatedNotes);
+      // Очистить список отложенных удалений
+      await AsyncStorage.removeItem("deletedNoteIds");
+      console.log("Удалённые заметки успешно синхронизированы с сервером.");
     } catch (error) {
-      console.error("Error deleting notes:", error);
+      console.warn("Синхронизация удалённых заметок не удалась:", error);
     }
   };
+
+  useEffect(() => {
+    if (!token) return;
+    syncDeletedNotes(); // сразу пробуем синхронизацию
+  }, [token]);
 
   return (
     <NoteContext.Provider
@@ -386,13 +589,19 @@ export const NoteProvider = ({ children }) => {
         addNote,
         updateNote,
         deleteNotes,
-        updateToken,
         token,
         groups,
         setGroups,
         addGroup,
         updateGroup,
         deleteGroups,
+        saveToken,
+        handleGoogleLogin,
+        isLoggedIn,
+        name,
+        email,
+        handleLogOut,
+        expoPushToken
       }}
     >
       {children}

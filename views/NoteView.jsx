@@ -100,6 +100,15 @@ const NoteView = ({ navigation, route }) => {
             setFiles(note.files || []);
             setSelectedImages((note.images || []).map(img => img.uri));
             setSelectedGroupIds(note.selectedGroupIds || []);
+            setLastSavedNote({
+                id: note.id,
+                title: note.title || '',
+                text: note.text || '',
+                selectedGroupIds: note.selectedGroupIds || [],
+                files: note.files || [],
+                tasks: note.tasks || [],
+                images: note.images || [],
+            });
         }
     }, [route.params]);
 

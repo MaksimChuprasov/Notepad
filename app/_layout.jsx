@@ -1,7 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Platform } from 'react-native';
-import * as Notifications from "expo-notifications";
-import { registerForPushNotifications } from "../hooks/registerForPushNotifications";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
@@ -13,86 +10,16 @@ import {
   NavigationContainer,
   NavigationIndependentTree,
 } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const Tab = createBottomTabNavigator();
 
-const MainTabNavigator = () => {
-  const [expoPushToken, setExpoPushToken] = useState(null);
-  const notificationListener = useRef();
-  const responseListener = useRef();
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    // Get push-token
-    registerForPushNotifications().then(token => {
-      setExpoPushToken(token ?? null);
-      if (token) {
-        sendPushNotification(token);
-      }
-    });
-
-    notificationListener.current = Notifications.addNotificationReceivedListener(async notification => {
-      await Notifications.presentNotificationAsync({
-        title: notification.request.content.title,
-        body: notification.request.content.body,
-        data: notification.request.content.data,
-        sound: 'default',
-        android: {
-          channelId: 'default',
-        },
-        trigger: null
-      });
-    });
-
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-    });
-
-    return () => {
-      if (notificationListener.current) notificationListener.current.remove();
-      if (responseListener.current) responseListener.current.remove();
-    };
-  }, []);
-
-  function sendPushNotification(token) {
-    if (!token) {
-      console.warn('No push token, push not sent');
-      return;
-    }
-
-    fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-Encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: token,
-        sound: 'default',
-        title: 'Hello!',
-        body: 'Test',
-        priority: 'high',
-        channelId: 'default',
-        data: { someData: 'goes here' },
-      }),
-    })
-      .then(res => res.json())
-      .catch(err => console.error('Error sending push:', err));
-  }
+const MainTabNavigator = ({ isLoggedIn }) => {
 
   return (
     <Tab.Navigator
-      initialRouteName="Profile"
+      initialRouteName={isLoggedIn ? "Home" : "Profile"}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tab.Screen
@@ -120,11 +47,23 @@ const MainTabNavigator = () => {
 };
 
 export default function RootLayout() {
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
+
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      setIsLoggedIn(!!token);
+    };
+    checkToken();
+  }, []);
+
+  if (isLoggedIn === null) return null;
+
   return (
     <NavigationIndependentTree>
       <NavigationContainer>
         <NoteProvider>
-          <MainTabNavigator />
+          <MainTabNavigator isLoggedIn={isLoggedIn} />
         </NoteProvider>
       </NavigationContainer>
     </NavigationIndependentTree>
