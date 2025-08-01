@@ -22,30 +22,7 @@ export const NoteProvider = ({ children }) => {
 
   const isSigningInRef = useRef(false);
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        const storedToken = await AsyncStorage.getItem("userToken");
-        console.log("[TOKEN UPDATE]", storedToken);
-        setToken(storedToken);
-        setIsLoggedIn(!!storedToken);
-
-        if (storedToken) {
-          const response = await loadNotesFromApi(storedToken);
-          setNotes(response.notes);
-          console.log("[loadNotes] Notes updated");
-        }
-      } catch (error) {
-        console.warn("Ошибка инициализации:", error);
-      } finally {
-        setIsAppReady(true);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
-  /* Notifications.setNotificationHandler({
+  Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true, // Показывать баннер вверху экрана
       shouldPlaySound: false,
@@ -75,7 +52,7 @@ export const NoteProvider = ({ children }) => {
       notificationListener.remove();
       responseListener.remove();
     };
-  }, []); */
+  }, []);
 
   const handleGoogleLogin = async () => {
     if (isSigningInRef.current) {
@@ -131,32 +108,30 @@ export const NoteProvider = ({ children }) => {
     await GoogleSignin.signOut();
   };
 
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId:
-        "890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com",
-      offlineAccess: true,
-    });
+  const checkToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (token) {
+        setToken(token); // <--- обязательно
+        setIsLoggedIn(true);
 
-    const checkToken = async () => {
-      try {
-        const token = await AsyncStorage.getItem("userToken");
-        if (token) {
-          setIsLoggedIn(true);
-          const userInfo = await AsyncStorage.getItem("userInfo");
-          if (userInfo) {
-            const user = JSON.parse(userInfo);
-            setName(user.name);
-            setEmail(user.email);
-          }
+        const userInfo = await AsyncStorage.getItem("userInfo");
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          setName(user.name);
+          setEmail(user.email);
         }
-      } catch (e) {
-        console.error("Error loading token:", e);
-      }
-    };
 
-    checkToken();
-  }, []);
+        return token; // <--- возвращаем сам токен
+      } else {
+        console.warn("❗ Токен не найден");
+        return null;
+      }
+    } catch (e) {
+      console.error("Ошибка при получении токена:", e);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (Platform.OS === "android") {
@@ -253,6 +228,7 @@ export const NoteProvider = ({ children }) => {
       try {
         const savedToken = await AsyncStorage.getItem("userToken");
         if (savedToken) {
+          console.log("[savedToken]", savedToken);
           setToken(savedToken);
           setIsLoggedIn(true);
 
@@ -263,6 +239,7 @@ export const NoteProvider = ({ children }) => {
             setEmail(user.email);
           }
         } else {
+          console.log("[savedToken2]", savedToken);
           // Если токена нет, сбрасываем состояние
           setToken(null);
           setIsLoggedIn(false);
@@ -277,6 +254,7 @@ export const NoteProvider = ({ children }) => {
   }, []);
 
   const updateToken = (newToken) => {
+    console.log("[newToken]", newToken);
     setToken(newToken);
   };
 
@@ -357,7 +335,6 @@ export const NoteProvider = ({ children }) => {
 
       if (!response.ok) {
         const text = await response.text();
-        console.log("Response error text:", text);
         throw new Error("Error adding group");
       }
 
@@ -441,14 +418,19 @@ export const NoteProvider = ({ children }) => {
     console.log("[TOKEN UPDATE]", token);
   }, [token]);
 
-  const areNotesEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
   const loadNotes = async () => {
-    console.log("[loadNotes] Запрос с токеном:", token);
+    const ensuredToken = await checkToken(); // ждём token
+    if (!ensuredToken) {
+      console.error("❗ Не удалось получить токен, остановка запроса");
+      return;
+    }
+
+    console.log("[loadNotes] Запрос с токеном:", ensuredToken);
+
     try {
       const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${ensuredToken}`,
         },
       });
 
@@ -458,40 +440,11 @@ export const NoteProvider = ({ children }) => {
         throw new Error("Error loading notes");
       }
 
-      const text = await response.text();
-      const apiNotes = JSON.parse(text);
-
-      const storedJson = await AsyncStorage.getItem("notes");
-      const localNotes = storedJson ? JSON.parse(storedJson) : [];
-
-      const mergedNotes = apiNotes.map((apiNote) => {
-        const local = localNotes.find((n) => n.id === apiNote.id);
-        return {
-          ...apiNote,
-          selectedGroupIds: local?.selectedGroupIds || [],
-        };
-      });
-
-      if (!areNotesEqual(mergedNotes, notes)) {
-        setNotes(mergedNotes);
-        saveNotesToStorage(mergedNotes);
-        console.log("[loadNotes] Notes updated");
-      } else {
-        console.log("[loadNotes] No changes in notes");
-      }
+      const apiNotes = await response.json();
+      setNotes(apiNotes);
+      console.log("[loadNotes] Notes updated");
     } catch (error) {
-      console.warn("API is not available, loading from storage:", error);
-      try {
-        const storedNotes = await AsyncStorage.getItem("notes");
-        if (storedNotes !== null) {
-          const loaded = JSON.parse(storedNotes);
-          if (!areNotesEqual(loaded, notes)) {
-            setNotes(loaded);
-          }
-        }
-      } catch (storageError) {
-        console.error("Error loading from storage:", storageError);
-      }
+      console.error("Ошибка загрузки заметок:", error.message);
     }
   };
 
