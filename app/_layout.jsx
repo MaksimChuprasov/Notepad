@@ -1,71 +1,56 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useContext, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
 import SocialView from "../views/SocialView";
 import NoteView from "../views/NoteView";
 import ProfileView from "../views/ProfileView";
-import { NoteProvider } from "./NoteContext";
+import NoteContext, { NoteProvider } from "./NoteContext";
 import {
   NavigationContainer,
   NavigationIndependentTree,
+  useNavigationContainerRef,
 } from "@react-navigation/native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 const Tab = createBottomTabNavigator();
 
-const MainTabNavigator = ({ isLoggedIn }) => {
-
+const MainTabNavigator = () => {
   return (
-    <Tab.Navigator
-      initialRouteName={isLoggedIn ? "Home" : "Profile"}
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      <Tab.Screen
-        options={{ headerShown: false }}
-        name="Home"
-        component={HomeView}
-      />
-      <Tab.Screen
-        options={{ headerShown: false }}
-        name="Social"
-        component={SocialView}
-      />
-      <Tab.Screen
-        options={{ headerShown: false }}
-        name="Note"
-        component={NoteView}
-      />
-      <Tab.Screen
-        options={{ headerShown: false }}
-        name="Profile"
-        component={ProfileView}
-      />
+    <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />}>
+      <Tab.Screen name="Home" component={HomeView} options={{ headerShown: false }} />
+      <Tab.Screen name="Social" component={SocialView} options={{ headerShown: false }} />
+      <Tab.Screen name="Note" component={NoteView} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={ProfileView} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 };
 
-export default function RootLayout() {
-  const [isLoggedIn, setIsLoggedIn] = useState(null);
+const AppWithAuth = ({ navigationRef }) => {
+  const { isLoggedIn } = useContext(NoteContext);
 
   useEffect(() => {
-    const checkToken = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      setIsLoggedIn(!!token);
-    };
-    checkToken();
-  }, []);
+    if (isLoggedIn === true) {
+      navigationRef.current?.navigate("Home");
+    } else if (isLoggedIn === false) {
+      navigationRef.current?.navigate("Profile");
+    }
+  }, [isLoggedIn]);
 
   if (isLoggedIn === null) return null;
 
+  return <MainTabNavigator />;
+};
+
+export default function RootLayout() {
+  const navigationRef = useNavigationContainerRef();
+
   return (
-    <NavigationIndependentTree>
-      <NavigationContainer>
-        <NoteProvider>
-          <MainTabNavigator isLoggedIn={isLoggedIn} />
-        </NoteProvider>
-      </NavigationContainer>
-    </NavigationIndependentTree>
+    <NoteProvider>
+      <NavigationIndependentTree>
+        <NavigationContainer ref={navigationRef}>
+          <AppWithAuth navigationRef={navigationRef} />
+        </NavigationContainer>
+      </NavigationIndependentTree>
+    </NoteProvider>
   );
 }

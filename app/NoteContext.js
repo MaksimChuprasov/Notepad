@@ -15,11 +15,67 @@ export const NoteProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [groups, setGroups] = useState([]);
   const [expoPushToken, setExpoPushToken] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const [isAppReady, setIsAppReady] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
   const isSigningInRef = useRef(false);
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("userToken");
+        console.log("[TOKEN UPDATE]", storedToken);
+        setToken(storedToken);
+        setIsLoggedIn(!!storedToken);
+
+        if (storedToken) {
+          const response = await loadNotesFromApi(storedToken);
+          setNotes(response.notes);
+          console.log("[loadNotes] Notes updated");
+        }
+      } catch (error) {
+        console.warn("Ошибка инициализации:", error);
+      } finally {
+        setIsAppReady(true);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  /* Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true, // Показывать баннер вверху экрана
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowList: true, // Добавлять уведомление в список уведомлений (центр уведомлений)
+    }),
+  });
+
+  useEffect(() => {
+    // Слушатель для уведомлений, полученных при открытом приложении
+    const notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("🔔 Notification received:", notification);
+        loadNotes();
+      }
+    );
+
+    // Слушатель для кликов по уведомлению
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log("👆 Notification tapped:", response);
+        loadNotes();
+      });
+
+    // Очистка слушателей при размонтировании компонента
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
+  }, []); */
 
   const handleGoogleLogin = async () => {
     if (isSigningInRef.current) {
@@ -125,13 +181,11 @@ export const NoteProvider = ({ children }) => {
   const saveToken = async () => {
     try {
       const expoToken = await registerForPushNotifications();
-      console.log("Token from registerForPushNotifications:", expoToken);
 
       if (expoToken) {
         setExpoPushToken(expoToken);
 
         const expoResponse = await Notifications.getExpoPushTokenAsync();
-        console.log("Token from getExpoPushTokenAsync:", expoResponse);
 
         const response = await fetch(
           "https://notepad.faceqd.site/api/v1/save-token",
@@ -195,12 +249,31 @@ export const NoteProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const loadToken = async () => {
-      const savedToken = await AsyncStorage.getItem("userToken");
-      setToken(savedToken);
-    };
+    const loadUserData = async () => {
+      try {
+        const savedToken = await AsyncStorage.getItem("userToken");
+        if (savedToken) {
+          setToken(savedToken);
+          setIsLoggedIn(true);
 
-    loadToken();
+          const userInfo = await AsyncStorage.getItem("userInfo");
+          if (userInfo) {
+            const user = JSON.parse(userInfo);
+            setName(user.name);
+            setEmail(user.email);
+          }
+        } else {
+          // Если токена нет, сбрасываем состояние
+          setToken(null);
+          setIsLoggedIn(false);
+          setName("");
+          setEmail("");
+        }
+      } catch (e) {
+        console.error("Error loading user data:", e);
+      }
+    };
+    loadUserData();
   }, []);
 
   const updateToken = (newToken) => {
@@ -364,7 +437,14 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  useEffect(() => {
+    console.log("[TOKEN UPDATE]", token);
+  }, [token]);
+
+  const areNotesEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
   const loadNotes = async () => {
+    console.log("[loadNotes] Запрос с токеном:", token);
     try {
       const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
         headers: {
@@ -372,15 +452,18 @@ export const NoteProvider = ({ children }) => {
         },
       });
 
-      if (!response.ok) throw new Error("Error loading notes");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Ошибка API /notes:", response.status, errorText);
+        throw new Error("Error loading notes");
+      }
 
-      const apiNotes = await response.json();
+      const text = await response.text();
+      const apiNotes = JSON.parse(text);
 
-      // Загружаем локальные заметки
       const storedJson = await AsyncStorage.getItem("notes");
       const localNotes = storedJson ? JSON.parse(storedJson) : [];
 
-      // Сливаем заметки по id, сохраняем selectedGroupIds
       const mergedNotes = apiNotes.map((apiNote) => {
         const local = localNotes.find((n) => n.id === apiNote.id);
         return {
@@ -389,14 +472,22 @@ export const NoteProvider = ({ children }) => {
         };
       });
 
-      setNotes(mergedNotes);
-      saveNotesToStorage(mergedNotes);
+      if (!areNotesEqual(mergedNotes, notes)) {
+        setNotes(mergedNotes);
+        saveNotesToStorage(mergedNotes);
+        console.log("[loadNotes] Notes updated");
+      } else {
+        console.log("[loadNotes] No changes in notes");
+      }
     } catch (error) {
       console.warn("API is not available, loading from storage:", error);
       try {
         const storedNotes = await AsyncStorage.getItem("notes");
         if (storedNotes !== null) {
-          setNotes(JSON.parse(storedNotes));
+          const loaded = JSON.parse(storedNotes);
+          if (!areNotesEqual(loaded, notes)) {
+            setNotes(loaded);
+          }
         }
       } catch (storageError) {
         console.error("Error loading from storage:", storageError);
@@ -406,8 +497,16 @@ export const NoteProvider = ({ children }) => {
 
   useEffect(() => {
     if (!token) return;
-    loadNotesFromStorage();
-    loadNotes();
+
+    let called = false;
+    const load = async () => {
+      if (called) return;
+      called = true;
+      await loadNotesFromStorage(); // можно оставить
+      await loadNotes();
+    };
+
+    load();
   }, [token]);
 
   const saveNotesToStorage = async (newNotes) => {
@@ -601,7 +700,8 @@ export const NoteProvider = ({ children }) => {
         name,
         email,
         handleLogOut,
-        expoPushToken
+        expoPushToken,
+        isAppReady,
       }}
     >
       {children}
