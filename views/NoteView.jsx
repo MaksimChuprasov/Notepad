@@ -112,17 +112,6 @@ const NoteView = ({ navigation, route }) => {
         }
     }, [route.params]);
 
-    /*  const getFileNameFromUri = (uri) => {
-         try {
-             const parts = uri.split('/');
-             return parts[parts.length - 1];
-         } catch {
-             return 'image.jpg';
-         }
-     }; */
-
-
-
     const saveNote = () => {
         if (!title.trim()) {
             setTitleError('Title is required');
@@ -217,7 +206,64 @@ const NoteView = ({ navigation, route }) => {
         clearEditorAndExit(true);
     };
 
-    /*  const decodeFileNameFromUri = (uri) => {
+    // Outside press function
+    const handleOutsidePress = () => {
+        if (showSaveModal) {
+            setShowSaveModal(false);
+        }
+        setEditingFileIndex(null);
+    };
+
+    // Back press function
+    const handleBackPress = () => {
+        if (checkIfNoteChanged()) {
+            setShowSaveModal(true);
+        } else {
+            clearEditorAndExit();
+        }
+    };
+
+    // Function to handle back action on phone
+    useEffect(() => {
+        if (!isFocused) return;
+
+        const backAction = () => {
+            handleBackPress();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [isFocused, text, title, files, noteToEdit, selectedGroupIds]);
+
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: '#fff',
+        },
+        scrollViewContent: {
+            paddingBottom: 50,
+        },
+    });
+
+
+    /* Functions for files and photos */
+
+    /*
+       const getFileNameFromUri = (uri) => {
+         try {
+             const parts = uri.split('/');
+             return parts[parts.length - 1];
+         } catch {
+             return 'image.jpg';
+         }
+     }; 
+    
+    const decodeFileNameFromUri = (uri) => {
          try {
              const parts = uri.split('document/');
              if (parts.length < 2) return 'unknown';
@@ -349,63 +395,22 @@ const NoteView = ({ navigation, route }) => {
      const handleCancelDelete = () => {
          setDeleteImageModal(false);
          setImageToDeleteIndex(null);
-     };*/
+     };
 
-    const handleOutsidePress = () => {
-        if (showSaveModal) {
-            setShowSaveModal(false);
-        }
-        setEditingFileIndex(null);
-    };
+    const addPhoto = async () => {
+      try {
+          const result = await ImagePicker.launchImageLibraryAsync({
+              allowsEditing: false,
+              quality: 1,
+          });
 
-    const handleBackPress = () => {
-        if (checkIfNoteChanged()) {
-            setShowSaveModal(true);
-        } else {
-            clearEditorAndExit();
-        }
-    };
-
-    useEffect(() => {
-        if (!isFocused) return;
-
-        const backAction = () => {
-            handleBackPress();
-            return true;
-        };
-
-        const backHandler = BackHandler.addEventListener(
-            'hardwareBackPress',
-            backAction
-        );
-
-        return () => backHandler.remove();
-    }, [isFocused, text, title, files, noteToEdit, selectedGroupIds]);
-
-    /* const addPhoto = async () => {
-        try {
-            const result = await ImagePicker.launchImageLibraryAsync({
-                allowsEditing: false,
-                quality: 1,
-            });
-
-            if (!result.canceled) {
-                setSelectedImages([...selectedImages, result.assets[0].uri]);
-            }
-        } catch (error) {
-            console.error("Error selecting photo:", error);
-        }
-    }; */
-
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: '#fff',
-        },
-        scrollViewContent: {
-            paddingBottom: 50,
-        },
-    });
+          if (!result.canceled) {
+              setSelectedImages([...selectedImages, result.assets[0].uri]);
+          }
+      } catch (error) {
+          console.error("Error selecting photo:", error);
+      }
+  }; */
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>

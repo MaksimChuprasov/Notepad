@@ -22,17 +22,18 @@ export const NoteProvider = ({ children }) => {
 
   const isSigningInRef = useRef(false);
 
+  // push properties
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowBanner: true, // Показывать баннер вверху экрана
+      shouldShowBanner: true,
       shouldPlaySound: false,
       shouldSetBadge: false,
-      shouldShowList: true, // Добавлять уведомление в список уведомлений (центр уведомлений)
+      shouldShowList: true,
     }),
   });
 
   useEffect(() => {
-    // Слушатель для уведомлений, полученных при открытом приложении
+    // Listener for notifications received while the application is open
     const notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log("🔔 Notification received:", notification);
@@ -40,20 +41,21 @@ export const NoteProvider = ({ children }) => {
       }
     );
 
-    // Слушатель для кликов по уведомлению
+    // Notification Click Listener
     const responseListener =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("👆 Notification tapped:", response);
         loadNotes();
       });
 
-    // Очистка слушателей при размонтировании компонента
+    // Clearing listeners when unmounting a component
     return () => {
       notificationListener.remove();
       responseListener.remove();
     };
   }, []);
 
+  // Google login function
   const handleGoogleLogin = async () => {
     if (isSigningInRef.current) {
       console.log("Google sign-in уже выполняется, ждите...");
@@ -94,10 +96,11 @@ export const NoteProvider = ({ children }) => {
     } catch (error) {
       console.error("❌ Google login error", error);
     } finally {
-      isSigningInRef.current = false; // снимаем блокировку после завершения
+      isSigningInRef.current = false;
     }
   };
 
+  // Logout function
   const handleLogOut = async () => {
     await AsyncStorage.removeItem("userToken");
     await AsyncStorage.removeItem("userInfo");
@@ -108,6 +111,7 @@ export const NoteProvider = ({ children }) => {
     await GoogleSignin.signOut();
   };
 
+  // Check token function
   const checkToken = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
@@ -133,26 +137,7 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      Notifications.setNotificationChannelAsync("default", {
-        name: "default",
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#FF231F7C",
-      });
-    }
-  }, []);
-
-  const hasSavedPushToken = useRef(false);
-
-  useEffect(() => {
-    if (token && !hasSavedPushToken.current) {
-      hasSavedPushToken.current = true;
-      saveToken();
-    }
-  }, [token]);
-
+  // Save token function
   const saveToken = async () => {
     try {
       const expoToken = await registerForPushNotifications();
@@ -179,8 +164,216 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
-  const STORAGE_KEY = "groups_data";
+  // update token function
+  const updateToken = (newToken) => {
+    console.log("[newToken]", newToken);
+    setToken(newToken);
+  };
 
+  // Load notes from local storage function
+  const loadNotesFromStorage = async () => {
+    try {
+      const json = await AsyncStorage.getItem("notes");
+      if (json) {
+        const savedNotes = JSON.parse(json);
+        setNotes(savedNotes);
+      }
+    } catch (error) {
+      console.error("Error loading notes:", error);
+    }
+  };
+
+  // Save notes to local storage function
+  const saveNotesToStorage = async (newNotes) => {
+    try {
+      await AsyncStorage.setItem("notes", JSON.stringify(newNotes));
+    } catch (error) {
+      console.error("Error saving notes:", error);
+    }
+  };
+
+  // Load notes function
+  const loadNotes = async () => {
+    const ensuredToken = await checkToken(); // ждём token
+    if (!ensuredToken) {
+      console.error("❗ Не удалось получить токен, остановка запроса");
+      return;
+    }
+
+    console.log("[loadNotes] Запрос с токеном:", ensuredToken);
+
+    try {
+      const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
+        headers: {
+          Authorization: `Bearer ${ensuredToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Ошибка API /notes:", response.status, errorText);
+        throw new Error("Error loading notes");
+      }
+
+      const apiNotes = await response.json();
+      setNotes(apiNotes);
+      console.log("[loadNotes] Notes updated");
+    } catch (error) {
+      console.error("Ошибка загрузки заметок:", error.message);
+    }
+  };
+
+  // Add note function
+  const addNote = async (note) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(note),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error adding note to server");
+      }
+
+      const serverNote = await response.json();
+      const newNote = {
+        ...note,
+        id: serverNote.id, // ID от сервера
+      };
+
+      const newNotes = [newNote, ...notes];
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
+    } catch (error) {
+      console.warn("Ошибка при добавлении заметки, сохраняем локально:", error);
+
+      const fallbackNote = {
+        ...note,
+        id: Date.now().toString(), // временный id
+        unsynced: true, // можно использовать для последующей синхронизации
+      };
+
+      const newNotes = [fallbackNote, ...notes];
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
+    }
+  };
+
+  // Update note function
+  const updateNote = async (updatedNote) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `https://notepad.faceqd.site/api/v1/notes/${updatedNote.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updatedNote),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Error updating note on server");
+      }
+
+      const newNotes = notes.map((note) =>
+        note.id === updatedNote.id ? updatedNote : note
+      );
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
+    } catch (error) {
+      console.warn("Ошибка при обновлении заметки, обновляем локально:", error);
+
+      const newNotes = notes.map((note) =>
+        note.id === updatedNote.id ? { ...updatedNote, unsynced: true } : note
+      );
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
+    }
+  };
+
+  // Delete note function
+  const deleteNotes = async (idsToDelete) => {
+    if (!token) return;
+
+    // 1. Удаляем локально
+    const updatedNotes = notes.filter((note) => !idsToDelete.includes(note.id));
+    setNotes(updatedNotes);
+    saveNotesToStorage(updatedNotes);
+
+    try {
+      // 2. Пробуем удалить с сервера
+      await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        )
+      );
+    } catch (error) {
+      console.warn(
+        "Удаление с сервера не удалось, будет повторено позже:",
+        error
+      );
+
+      // 3. Сохраняем список отложенных удалений
+      try {
+        const existing = await AsyncStorage.getItem("deletedNoteIds");
+        const existingIds = existing ? JSON.parse(existing) : [];
+        const merged = [...new Set([...existingIds, ...idsToDelete])];
+        await AsyncStorage.setItem("deletedNoteIds", JSON.stringify(merged));
+      } catch (e) {
+        console.error(
+          "Ошибка при сохранении удалённых заметок для синхронизации:",
+          e
+        );
+      }
+    }
+  };
+
+  // Sync delete notes function
+  const syncDeletedNotes = async () => {
+    if (!token) return;
+
+    try {
+      const stored = await AsyncStorage.getItem("deletedNoteIds");
+      const idsToDelete = stored ? JSON.parse(stored) : [];
+
+      if (idsToDelete.length === 0) return;
+
+      await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        )
+      );
+
+      // Очистить список отложенных удалений
+      await AsyncStorage.removeItem("deletedNoteIds");
+      console.log("Удалённые заметки успешно синхронизированы с сервером.");
+    } catch (error) {
+      console.warn("Синхронизация удалённых заметок не удалась:", error);
+    }
+  };
+
+  // Save groups to local storage function
   const saveGroupsToStorage = async (data) => {
     try {
       const json = JSON.stringify(data);
@@ -190,6 +383,7 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  // Load groups from local storage function
   const loadGroupsFromStorage = async () => {
     try {
       const json = await AsyncStorage.getItem(STORAGE_KEY);
@@ -200,64 +394,7 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    const load = async () => {
-      const savedGroups = await loadGroupsFromStorage();
-      setGroups(savedGroups);
-    };
-    load();
-  }, []);
-
-  useEffect(() => {
-    saveGroupsToStorage(groups);
-  }, [groups]);
-
-  useEffect(() => {
-    async function prepare() {
-      // Здесь можно загрузить ресурсы, данные и т.п.
-
-      // Когда всё готово, скрываем splash
-      await SplashScreen.hideAsync();
-    }
-
-    prepare();
-  }, []);
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const savedToken = await AsyncStorage.getItem("userToken");
-        if (savedToken) {
-          console.log("[savedToken]", savedToken);
-          setToken(savedToken);
-          setIsLoggedIn(true);
-
-          const userInfo = await AsyncStorage.getItem("userInfo");
-          if (userInfo) {
-            const user = JSON.parse(userInfo);
-            setName(user.name);
-            setEmail(user.email);
-          }
-        } else {
-          console.log("[savedToken2]", savedToken);
-          // Если токена нет, сбрасываем состояние
-          setToken(null);
-          setIsLoggedIn(false);
-          setName("");
-          setEmail("");
-        }
-      } catch (e) {
-        console.error("Error loading user data:", e);
-      }
-    };
-    loadUserData();
-  }, []);
-
-  const updateToken = (newToken) => {
-    console.log("[newToken]", newToken);
-    setToken(newToken);
-  };
-
+  // Load groups function
   useEffect(() => {
     if (!token) return;
 
@@ -308,11 +445,7 @@ export const NoteProvider = ({ children }) => {
     loadGroups();
   }, [token]);
 
-  /* const addGroup = () => {
-    const newGroup = { id: Date.now().toString(), name: "New group" };
-    setGroups((prev) => [...prev, newGroup]);
-  }; */
-
+  // Add group function
   const addGroup = async (group) => {
     if (!token) return;
 
@@ -353,6 +486,7 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  // Update group function
   const updateGroup = async (updatedGroup) => {
     if (!token) return;
 
@@ -386,6 +520,7 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  // Delete group function
   const deleteGroups = async (idsToDelete) => {
     if (!token) return;
 
@@ -414,39 +549,85 @@ export const NoteProvider = ({ children }) => {
     }
   };
 
+  // ??
   useEffect(() => {
-    console.log("[TOKEN UPDATE]", token);
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
+    }
+  }, []);
+
+  const hasSavedPushToken = useRef(false);
+
+  useEffect(() => {
+    if (token && !hasSavedPushToken.current) {
+      hasSavedPushToken.current = true;
+      saveToken();
+    }
   }, [token]);
 
-  const loadNotes = async () => {
-    const ensuredToken = await checkToken(); // ждём token
-    if (!ensuredToken) {
-      console.error("❗ Не удалось получить токен, остановка запроса");
-      return;
+  const STORAGE_KEY = "groups_data";
+
+  // Load groups from local storage call function
+  useEffect(() => {
+    const load = async () => {
+      const savedGroups = await loadGroupsFromStorage();
+      setGroups(savedGroups);
+    };
+    load();
+  }, []);
+
+  // Save groups to local storage call function
+  useEffect(() => {
+    saveGroupsToStorage(groups);
+  }, [groups]);
+
+  // Splash screen
+  useEffect(() => {
+    async function prepare() {
+      // Здесь можно загрузить ресурсы, данные и т.п.
+
+      // Когда всё готово, скрываем splash
+      await SplashScreen.hideAsync();
     }
 
-    console.log("[loadNotes] Запрос с токеном:", ensuredToken);
+    prepare();
+  }, []);
 
-    try {
-      const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
-        headers: {
-          Authorization: `Bearer ${ensuredToken}`,
-        },
-      });
+  // Load User Data call function
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const savedToken = await AsyncStorage.getItem("userToken");
+        if (savedToken) {
+          console.log("[savedToken]", savedToken);
+          setToken(savedToken);
+          setIsLoggedIn(true);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Ошибка API /notes:", response.status, errorText);
-        throw new Error("Error loading notes");
+          const userInfo = await AsyncStorage.getItem("userInfo");
+          if (userInfo) {
+            const user = JSON.parse(userInfo);
+            setName(user.name);
+            setEmail(user.email);
+          }
+        } else {
+          console.log("[savedToken2]", savedToken);
+          // Если токена нет, сбрасываем состояние
+          setToken(null);
+          setIsLoggedIn(false);
+          setName("");
+          setEmail("");
+        }
+      } catch (e) {
+        console.error("Error loading user data:", e);
       }
-
-      const apiNotes = await response.json();
-      setNotes(apiNotes);
-      console.log("[loadNotes] Notes updated");
-    } catch (error) {
-      console.error("Ошибка загрузки заметок:", error.message);
-    }
-  };
+    };
+    loadUserData();
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -455,182 +636,16 @@ export const NoteProvider = ({ children }) => {
     const load = async () => {
       if (called) return;
       called = true;
-      await loadNotesFromStorage(); // можно оставить
+      await loadNotesFromStorage();
       await loadNotes();
     };
 
     load();
   }, [token]);
 
-  const saveNotesToStorage = async (newNotes) => {
-    try {
-      await AsyncStorage.setItem("notes", JSON.stringify(newNotes));
-    } catch (error) {
-      console.error("Error saving notes:", error);
-    }
-  };
-
-  const loadNotesFromStorage = async () => {
-    try {
-      const json = await AsyncStorage.getItem("notes");
-      if (json) {
-        const savedNotes = JSON.parse(json);
-        setNotes(savedNotes);
-      }
-    } catch (error) {
-      console.error("Error loading notes:", error);
-    }
-  };
-
-  const addNote = async (note) => {
-    if (!token) return;
-
-    try {
-      const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(note),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error adding note to server");
-      }
-
-      const serverNote = await response.json();
-      const newNote = {
-        ...note,
-        id: serverNote.id, // ID от сервера
-      };
-
-      const newNotes = [newNote, ...notes];
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
-    } catch (error) {
-      console.warn("Ошибка при добавлении заметки, сохраняем локально:", error);
-
-      const fallbackNote = {
-        ...note,
-        id: Date.now().toString(), // временный id
-        unsynced: true, // можно использовать для последующей синхронизации
-      };
-
-      const newNotes = [fallbackNote, ...notes];
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
-    }
-  };
-
-  const updateNote = async (updatedNote) => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(
-        `https://notepad.faceqd.site/api/v1/notes/${updatedNote.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updatedNote),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Error updating note on server");
-      }
-
-      const newNotes = notes.map((note) =>
-        note.id === updatedNote.id ? updatedNote : note
-      );
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
-    } catch (error) {
-      console.warn("Ошибка при обновлении заметки, обновляем локально:", error);
-
-      const newNotes = notes.map((note) =>
-        note.id === updatedNote.id ? { ...updatedNote, unsynced: true } : note
-      );
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
-    }
-  };
-
-  const deleteNotes = async (idsToDelete) => {
-    if (!token) return;
-
-    // 1. Удаляем локально
-    const updatedNotes = notes.filter((note) => !idsToDelete.includes(note.id));
-    setNotes(updatedNotes);
-    saveNotesToStorage(updatedNotes);
-
-    try {
-      // 2. Пробуем удалить с сервера
-      await Promise.all(
-        idsToDelete.map((id) =>
-          fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        )
-      );
-    } catch (error) {
-      console.warn(
-        "Удаление с сервера не удалось, будет повторено позже:",
-        error
-      );
-
-      // 3. Сохраняем список отложенных удалений
-      try {
-        const existing = await AsyncStorage.getItem("deletedNoteIds");
-        const existingIds = existing ? JSON.parse(existing) : [];
-        const merged = [...new Set([...existingIds, ...idsToDelete])];
-        await AsyncStorage.setItem("deletedNoteIds", JSON.stringify(merged));
-      } catch (e) {
-        console.error(
-          "Ошибка при сохранении удалённых заметок для синхронизации:",
-          e
-        );
-      }
-    }
-  };
-
-  const syncDeletedNotes = async () => {
-    if (!token) return;
-
-    try {
-      const stored = await AsyncStorage.getItem("deletedNoteIds");
-      const idsToDelete = stored ? JSON.parse(stored) : [];
-
-      if (idsToDelete.length === 0) return;
-
-      await Promise.all(
-        idsToDelete.map((id) =>
-          fetch(`https://notepad.faceqd.site/api/v1/notes/${id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        )
-      );
-
-      // Очистить список отложенных удалений
-      await AsyncStorage.removeItem("deletedNoteIds");
-      console.log("Удалённые заметки успешно синхронизированы с сервером.");
-    } catch (error) {
-      console.warn("Синхронизация удалённых заметок не удалась:", error);
-    }
-  };
-
   useEffect(() => {
     if (!token) return;
-    syncDeletedNotes(); // сразу пробуем синхронизацию
+    syncDeletedNotes();
   }, [token]);
 
   return (
