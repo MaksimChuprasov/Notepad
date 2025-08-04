@@ -1,9 +1,11 @@
 import { View, Text, Image } from 'react-native';
 import React, { useEffect } from 'react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 const Note = ({ note, isSelected }) => {
 
+    const { t } = useTranslation();
     const formattedDate = note?.createdAt
         ? format(new Date(note.createdAt), 'd MMM yyyy HH:mm')  // 4 Aug 2025
         : '';
@@ -58,7 +60,7 @@ const Note = ({ note, isSelected }) => {
                         </View>
                     ))}
                     {note.tasks.length > 3 && (
-                        <Text className="text-xs text-gray-400 italic">+ {note.tasks.length - 3} more</Text>
+                        <Text className="text-xs text-gray-400 italic">+ {note.tasks.length - 3} {t('more')}</Text>
                     )}
                 </View>
             )}

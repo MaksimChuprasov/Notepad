@@ -1,7 +1,9 @@
 import { Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import React from 'react'
+import { useTranslation } from 'react-i18next';
 
 const SaveModal = ({ visible, onSave, onClose, onExit }) => {
+    const { t } = useTranslation();
     return (
         <Modal
             transparent={true}
@@ -26,21 +28,21 @@ const SaveModal = ({ visible, onSave, onClose, onExit }) => {
                             }}
                         >
                             <Text className="text-xl font-semibold text-gray-800 mb-3">
-                                You didn`t save your note. Save this note?
+                                {t('You didn`t save your note. Save this note?')}
                             </Text>
 
                             <TouchableOpacity
                                 className="w-full border-t border-gray-300 pt-2 mb-1 items-center"
                                 onPress={onSave}
                             >
-                                <Text className="text-lg text-green-700">Save</Text>
+                                <Text className="text-lg text-green-700">{t('Save')}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 className="w-full border-t border-gray-300 pt-2 items-center"
                                 onPress={onExit}
                             >
-                                <Text className="text-lg text-gray-700">Cancel</Text>
+                                <Text className="text-lg text-gray-700">{t('Cancel')}</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableWithoutFeedback>

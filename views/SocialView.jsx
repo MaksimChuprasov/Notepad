@@ -3,7 +3,7 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, Sa
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-
+import { useTranslation } from 'react-i18next';
 
 
 const SocialView = () => {
@@ -14,6 +14,7 @@ const SocialView = () => {
     const [selectMode, setSelectMode] = useState(false);
     const [editingGroupId, setEditingGroupId] = useState(null);
     const [showSavedMessage, setShowSavedMessage] = useState(false);
+    const { t } = useTranslation();
 
     const isGroupValid = (group) => {
         const hasName = group.name?.trim().length > 0;
@@ -53,7 +54,7 @@ const SocialView = () => {
     const handleAddGroup = () => {
         const newGroup = {
             id: Date.now().toString(),
-            name: 'New Group',
+            name: t('New Group'),
             collaborators: [{ id: Date.now().toString(), name: '' }],
             isDraft: true, // ⬅️ чтобы отличить несохранённую группу
         };
@@ -131,7 +132,6 @@ const SocialView = () => {
         if (!selectedGroups.includes(group.id)) {
             setSelectedGroups(prev => [...prev, group.id]);
         }
-        console.log(groups)
     };
 
     const handlePress = (group) => {
@@ -169,7 +169,7 @@ const SocialView = () => {
                         <View className="p-2 flex-row items-center">
                             <TextInput
                                 className="border border-[#ddd] bg-white rounded-md p-2 flex-1"
-                                placeholder="Search for groups..."
+                                placeholder={t("Search for groups...")}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
@@ -287,7 +287,7 @@ const SocialView = () => {
                         {showSavedMessage && (
                             <View className="absolute bottom-5 left-0 right-0 items-center">
                                 <View className="bg-green-500 px-4 py-2 rounded-xl shadow-lg">
-                                    <Text className="text-white font-medium">Group saved</Text>
+                                    <Text className="text-white font-medium">{t('Group saved')}</Text>
                                 </View>
                             </View>
                         )}

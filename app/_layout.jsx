@@ -1,4 +1,5 @@
-import React, { useEffect, useContext, useRef } from "react";
+import i18n, { initI18n } from '../src/i18n';
+import React, { useEffect, useContext, useRef, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
@@ -43,6 +44,15 @@ const AppWithAuth = ({ navigationRef }) => {
 
 export default function RootLayout() {
   const navigationRef = useNavigationContainerRef();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      await initI18n(); // инициализация
+      setIsReady(true);
+    }
+    prepare();
+  }, []);
 
   return (
     <NoteProvider>

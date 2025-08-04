@@ -7,12 +7,32 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import mobileAds from 'react-native-google-mobile-ads';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { changeLanguage } from '../src/i18n';
+import { useTranslation } from 'react-i18next';
+import i18n from '../src/i18n';
 
 
 const ProfileView = () => {
     const { saveToken, handleGoogleLogin, handleLogOut, isLoggedIn, name, email, expoPushToken } = useContext(NoteContext);
 
     const insets = useSafeAreaInsets();
+    const { t } = useTranslation();
+    const languages = [
+        { code: 'en', label: 'English' },
+        { code: 'ru', label: 'Русский' },
+        { code: 'tr', label: 'Türkçe' },
+        { code: 'de', label: 'Deutsch' },
+        { code: 'it', label: 'Italiano' },
+        { code: 'fr', label: 'Français' },
+        { code: 'es', label: 'Español' },
+        { code: 'pt', label: 'Português' },
+    ];
+
+    const currentLang = i18n.language;
+
+    const changeLanguage = (lang) => {
+        i18n.changeLanguage(lang);
+    };
 
     /* const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-5613402667721593/7654096833'; */
 
@@ -21,7 +41,8 @@ const ProfileView = () => {
             .initialize()
     }, []);
 
-
+    const maxLabelLength = Math.max(...languages.map((lang) => lang.label.length));
+    const estimatedMinWidth = maxLabelLength * 10 + 30;
 
     return isLoggedIn ? (
         <View style={{
@@ -50,13 +71,35 @@ const ProfileView = () => {
                 </TouchableOpacity>
 
             </View>
-            <TouchableOpacity
-                onPress={saveToken}
-                className="items-center mt-20 border rounded py-2"
-            >
-                <Text>Get Token</Text>
-            </TouchableOpacity>
-            <Text className='mt-3 text-center' selectable={true}>{expoPushToken}</Text>
+            <View className='flex-row items-center mt-8 mb-4'>
+                <Image
+                    source={require('../images/language.png')}
+                    className="w-10 h-10"
+                />
+                <Text className='text-lg'>{t('Change Language')}</Text>
+            </View>
+            <View className="flex-row flex-wrap gap-4 justify-start w-full">
+                {languages.map((lang) => {
+                    const isActive = lang.code === currentLang;
+                    return (
+                        <TouchableOpacity
+                            key={lang.code}
+                            onPress={() => changeLanguage(lang.code)}
+                            className={`w-[45%] py-2 rounded-lg border items-center ${isActive
+                                ? 'bg-gray-100 border-gray-600'
+                                : 'bg-white border-gray-300'
+                                }`}
+                            style={{ minWidth: estimatedMinWidth }}
+                        >
+                            <Text
+                                className='text-base font-medium text-gray-700'>
+                                {lang.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+            {/* <Text className='mt-3 text-center' selectable={true}>{expoPushToken}</Text> */}
 
             {/* <View className='absolute bottom-0'>
                 <BannerAd
@@ -85,7 +128,7 @@ const ProfileView = () => {
                             className="w-8 h-8"
                         />
                         <Text className="text-black text-center text-xl font-semibold ml-2">
-                            Sign in with Google
+                            {t('Sign in with Google')}
                         </Text>
                     </TouchableOpacity>
                 </View>

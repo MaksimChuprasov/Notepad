@@ -10,6 +10,7 @@ import * as FileSystem from 'expo-file-system';
 import TitleInput from '../components/TitleInput.jsx'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const NoteView = ({ navigation, route }) => {
     const { StorageAccessFramework } = FileSystem;
@@ -41,6 +42,7 @@ const NoteView = ({ navigation, route }) => {
     const [tasks, setTasks] = useState([]);
     const [searchCollaborator, setSearchCollaborator] = useState('');
     const [selectedGroupIds, setSelectedGroupIds] = useState([]);
+    const { t } = useTranslation();
 
     const insets = useSafeAreaInsets();
 
@@ -115,7 +117,7 @@ const NoteView = ({ navigation, route }) => {
 
     const saveNote = () => {
         if (!title.trim()) {
-            setTitleError('Title is required');
+            setTitleError(t('Title is required'));
             return;
         }
 
@@ -449,7 +451,7 @@ const NoteView = ({ navigation, route }) => {
                         {/* Выбранные группы */}
                         {selectedGroupIds.length > 0 && (
                             <View className="mt-2 px-4">
-                                <Text className="text-gray-600 mb-1">Shared with groups</Text>
+                                <Text className="text-gray-600 mb-1">{t('Shared with groups')}</Text>
                                 {groups
                                     .filter(group => selectedGroupIds.includes(group.id))
                                     .map(group => (
@@ -565,7 +567,7 @@ const NoteView = ({ navigation, route }) => {
                                     textAlignVertical="center"
                                     value={task.text}
                                     onChangeText={(text) => updateTask(task.id, text)}
-                                    placeholder="Enter your task"
+                                    placeholder={t("Enter your task")}
                                     placeholderTextColor="#9ca3af"
                                     className={`flex-1 text-[15px] text-gray-800 py-1 ${task.checked ? 'line-through text-gray-400' : ''
                                         }`}
@@ -576,7 +578,7 @@ const NoteView = ({ navigation, route }) => {
 
                         <TextInput
                             className="p-4 my-2 mx-3 bg-gray-50 rounded-xl shadow-md text-gray-900 text-base"
-                            placeholder="Enter your note..."
+                            placeholder={t("Enter your note...")}
                             onChangeText={text => setText(text)}
                             value={text}
                             multiline={true}
@@ -691,7 +693,7 @@ const NoteView = ({ navigation, route }) => {
                                     source={require('../images/tasks.png')}
                                     className="w-8 h-8"
                                 />
-                                <Text className="text-[12px]">Add Task</Text>
+                                <Text className="text-[12px]">{t('Add Task')}</Text>
                             </TouchableOpacity>
 
                             {/* <Modal
@@ -781,7 +783,7 @@ const NoteView = ({ navigation, route }) => {
                                     source={require('../images/collaborator.png')}
                                     className="w-8 h-8"
                                 />
-                                <Text className="text-[12px]">Groups</Text>
+                                <Text className="text-[12px]">{t('Groups')}</Text>
                             </TouchableOpacity>
                             <Modal
                                 animationType="none"

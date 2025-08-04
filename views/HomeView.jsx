@@ -4,6 +4,7 @@ import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import Note from '../components/Note';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 
 const HomeView = ({ navigation }) => {
     const [filteredNotes, setFilteredNotes] = useState([]);
@@ -11,6 +12,7 @@ const HomeView = ({ navigation }) => {
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
     const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes } = useContext(NoteContext);
+    const { t } = useTranslation();
 
     const refreshPage = () => {
         loadNotes();
@@ -133,7 +135,7 @@ const HomeView = ({ navigation }) => {
                         <View className="p-2 flex-row items-center">
                             <TextInput
                                 className="border border-[#ddd] bg-white rounded-md p-2 flex-1"
-                                placeholder="Search..."
+                                placeholder={t('Search...')}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />

@@ -1,0 +1,23 @@
+{
+    "hello": "Hello",
+    "welcome": "Welcome",
+    "Home": "Home",
+    "Groups": "Groups",
+    "New Note": "New Note",
+    "Profile": "Profile",
+    "Search...": "Search...",
+    "more": "more",
+    "Search for groups...": "Search for groups...",
+    "New Group": "New Group",
+    "Group saved": "Group saved",
+    "Title is required": "Title is required",
+    "Shared with groups": "Shared with groups",
+    "Enter your task": "Enter your task",
+    "Enter your note...": "Enter your note...",
+    "Add Task": "Add Task",
+    "You didn`t save your note. Save this note?": "You didn`t save your note. Save this note?",
+    "Save": "Save",
+    "Cancel": "Cancel",
+    "Sign in with Google": "Sign in with Google",
+    "Change Language": "Change Language"
+}

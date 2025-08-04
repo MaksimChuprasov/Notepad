@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, TextInput, Text, Animated } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const TitleInput = ({ value, onChangeText, errorMessage }) => {
   const [showError, setShowError] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (errorMessage) {
@@ -26,7 +28,7 @@ const TitleInput = ({ value, onChangeText, errorMessage }) => {
     <View className=" relative w-2/3">
       <TextInput
         className=" rounded-md px-3 text-xl bg-white mb-[-14px]"
-        placeholder="New Note"
+        placeholder={t("New Note")}
         value={value}
         onChangeText={onChangeText}
       />
