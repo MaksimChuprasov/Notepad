@@ -31,26 +31,40 @@ const HomeView = ({ navigation }) => {
 
         return notes.filter(note =>
             (note.text || '').toLowerCase().includes(lowercasedQuery) ||
-            (note.title || '').toLowerCase().includes(lowercasedQuery) ||
+            (note.title || '').toLowerCase().includes(lowercasedQuery) /* ||
             (note.files || []).some(file =>
                 typeof file === 'string'
                     ? file.toLowerCase().includes(lowercasedQuery)
                     : file.name?.toLowerCase().includes(lowercasedQuery)
-            )
+            ) */
         );
     };
 
     useEffect(() => {
         if (Array.isArray(contextNotes)) {
             const filtered = filterNotes(contextNotes, searchQuery);
-            setFilteredNotes(filtered);
+
+            // Сортируем от новых к старым по createdAt
+            const sorted = filtered.slice().sort((a, b) => {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateB - dateA; // по убыванию
+            });
+
+            setFilteredNotes(sorted);
         }
     }, [searchQuery, contextNotes]);
 
     useFocusEffect(
         React.useCallback(() => {
             if (Array.isArray(contextNotes)) {
-                setFilteredNotes(filterNotes(contextNotes, searchQuery));
+                const filtered = filterNotes(contextNotes, searchQuery);
+                const sorted = filtered.slice().sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0).getTime();
+                    const dateB = new Date(b.createdAt || 0).getTime();
+                    return dateB - dateA;
+                });
+                setFilteredNotes(sorted);
             }
         }, [contextNotes, searchQuery])
     );

@@ -2,12 +2,15 @@ import { View, Text, Image } from 'react-native';
 import React, { useEffect } from 'react';
 import { format } from 'date-fns';
 
-const Note = ({ note, formattedDate, isSelected }) => {
+const Note = ({ note, isSelected }) => {
 
+    const formattedDate = note?.createdAt
+        ? format(new Date(note.createdAt), 'd MMM yyyy HH:mm')  // 4 Aug 2025
+        : '';
 
     return (
         <View
-            className={`flex-1 bg-white rounded-3xl p-4 mb-4 border
+            className={`flex-1 bg-white rounded-3xl p-4 pb-0 mb-4 border
     ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 160 }}>
             <View className='flex flex-row justify-between items-center mb-2 mr-4'>
                 {/* Title */}
@@ -28,14 +31,7 @@ const Note = ({ note, formattedDate, isSelected }) => {
                 )}
 
             </View>
-            {/* Text */}
-            <Text
-                className="text-gray-600 text-sm mb-2 flex-shrink"
-                numberOfLines={3}
-                ellipsizeMode="tail"
-            >
-                {note?.text || 'Empty note'}
-            </Text>
+
 
             {/* Tasks */}
             {note?.tasks?.length > 0 && (
@@ -67,11 +63,22 @@ const Note = ({ note, formattedDate, isSelected }) => {
                 </View>
             )}
 
+            {/* Text */}
+            {note?.text ? (
+                <Text
+                    className="text-gray-600 text-sm mb-2 flex-shrink"
+                    numberOfLines={3}
+                    ellipsizeMode="tail"
+                >
+                    {note.text}
+                </Text>
+            ) : null}
+
             <View className="flex-grow" />
 
-            {/* Files */}
-            <View className="flex-row justify-between items-center border-t border-gray-200 pt-2 mt-2">
-                {note?.files?.length > 0 && note.files[0].name ? (
+            <View className="flex-row justify-end border-t border-gray-200 mt-1">
+                {/* Файл */}
+                {/* {note?.files?.length > 0 && note.files[0].name ? (
                     <Text
                         className="text-xs text-gray-500 max-w-[140px]"
                         numberOfLines={1}
@@ -80,9 +87,13 @@ const Note = ({ note, formattedDate, isSelected }) => {
                         📎 {note.files[0].name}
                     </Text>
                 ) : (
-                    <View className="w-[100px]" />
-                )}
+                    <View className="w-[140px]" />
+                )} */}
 
+                {/* Дата создания */}
+                <Text className="text-xs text-gray-400 py-2">
+                    {formattedDate}
+                </Text>
             </View>
         </View>
     );

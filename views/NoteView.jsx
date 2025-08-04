@@ -108,6 +108,7 @@ const NoteView = ({ navigation, route }) => {
                 files: note.files || [],
                 tasks: note.tasks || [],
                 images: note.images || [],
+                createdAt: initialNoteToEdit?.createdAt || new Date().toISOString(),
             });
         }
     }, [route.params]);
@@ -127,6 +128,7 @@ const NoteView = ({ navigation, route }) => {
             selectedGroupIds,
             /* files, */
             tasks,
+            createdAt: initialNoteToEdit?.createdAt || new Date().toISOString(),
             /* images: selectedImages.map(uri => ({
                 uri,
                 name: getFileNameFromUri(uri),
@@ -447,7 +449,7 @@ const NoteView = ({ navigation, route }) => {
                         {/* Выбранные группы */}
                         {selectedGroupIds.length > 0 && (
                             <View className="mt-2 px-4">
-                                <Text className="text-gray-600 mb-1">Selected groups:</Text>
+                                <Text className="text-gray-600 mb-1">Shared with groups</Text>
                                 {groups
                                     .filter(group => selectedGroupIds.includes(group.id))
                                     .map(group => (
@@ -463,14 +465,7 @@ const NoteView = ({ navigation, route }) => {
                         )}
                     </View>
                     <ScrollView className='flex-1 mb-4' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
-                        <TextInput
-                            className="p-4 my-2 mx-3 bg-gray-50 rounded-xl shadow-md text-gray-900 text-base"
-                            placeholder="Enter your note..."
-                            onChangeText={text => setText(text)}
-                            value={text}
-                            multiline={true}
-                            textAlignVertical="top"
-                        />
+
 
                         {/* <View className="px-3 mb-2">
                             {files.map((file, index) => (
@@ -579,6 +574,15 @@ const NoteView = ({ navigation, route }) => {
                             </View>
                         ))}
 
+                        <TextInput
+                            className="p-4 my-2 mx-3 bg-gray-50 rounded-xl shadow-md text-gray-900 text-base"
+                            placeholder="Enter your note..."
+                            onChangeText={text => setText(text)}
+                            value={text}
+                            multiline={true}
+                            textAlignVertical="top"
+                        />
+
                         {/* <View className="pt-4 px-3 w-full">
                             {selectedImages.map((uri, index) => (
                                 <TouchableOpacity
@@ -681,16 +685,16 @@ const NoteView = ({ navigation, route }) => {
                             {/* Вторая кнопка */}
                             <TouchableOpacity
                                 className="items-center mr-8"
-                                onPress={toggleModal}
+                                onPress={addTask}
                             >
                                 <Image
-                                    source={require('../images/plus.png')}
+                                    source={require('../images/tasks.png')}
                                     className="w-8 h-8"
                                 />
-                                <Text className="text-[12px]">Add</Text>
+                                <Text className="text-[12px]">Add Task</Text>
                             </TouchableOpacity>
 
-                            <Modal
+                            {/* <Modal
                                 animationType="none"
                                 transparent={true}
                                 visible={isModalVisible}
@@ -698,11 +702,11 @@ const NoteView = ({ navigation, route }) => {
                             >
                                 <TouchableWithoutFeedback onPress={toggleModal}>
                                     <View className="flex-1">
-                                        {/* модальное окно */}
+                                         модальное окно 
                                         <View
                                             className="absolute bottom-[75px] left-6 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
                                         >
-                                            {/* <TouchableOpacity
+                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
                                                 onPress={addPhoto}
                                             >
@@ -713,7 +717,7 @@ const NoteView = ({ navigation, route }) => {
                                                     />
                                                     <Text>Add Photo</Text>
                                                 </View>
-                                            </TouchableOpacity> */}
+                                            </TouchableOpacity> 
                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
                                                 onPress={addTask}
@@ -727,7 +731,7 @@ const NoteView = ({ navigation, route }) => {
                                                 </View>
                                             </TouchableOpacity>
 
-                                            {/* <TouchableOpacity
+                                             <TouchableOpacity
                                                 className="py-2 border-b border-gray-300"
                                                 onPress={() => {  }}
                                             >
@@ -750,11 +754,11 @@ const NoteView = ({ navigation, route }) => {
                                                     />
                                                     <Text>Add Location</Text>
                                                 </View>
-                                            </TouchableOpacity> */}
+                                            </TouchableOpacity> 
                                         </View>
                                     </View>
                                 </TouchableWithoutFeedback>
-                            </Modal>
+                            </Modal> */}
 
 
                             {/* Третья кнопка */}

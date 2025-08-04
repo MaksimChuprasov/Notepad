@@ -55,6 +55,14 @@ export const NoteProvider = ({ children }) => {
     };
   }, []);
 
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        "890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com", // из Firebase Console
+      offlineAccess: true,
+    });
+  }, []);
+
   // Google login function
   const handleGoogleLogin = async () => {
     if (isSigningInRef.current) {
@@ -216,7 +224,17 @@ export const NoteProvider = ({ children }) => {
       }
 
       const apiNotes = await response.json();
-      setNotes(apiNotes);
+      const notesWithDates = apiNotes.map((note) => ({
+        ...note,
+        createdAt:
+          note.createdAt || note.updated_at || new Date().toISOString(),
+      }));
+
+      notesWithDates.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setNotes(notesWithDates);
       console.log("[loadNotes] Notes updated");
     } catch (error) {
       console.error("Ошибка загрузки заметок:", error.message);
