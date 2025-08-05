@@ -8,6 +8,7 @@
     "Search for groups...": "Gruplarda ara...",
     "New Group": "Yeni Grup",
     "Group saved": "Grup kaydedildi",
+     "Title": "Başlık",
     "Title is required": "Başlık gerekli",
     "Shared with groups": "Gruplarla paylaşıldı",
     "Enter your task": "Görevinizi girin",
@@ -16,6 +17,8 @@
     "You didn`t save your note. Save this note?": "Notunuzu kaydetmediniz. Kaydetmek ister misiniz?",
     "Save": "Kaydet",
     "Cancel": "İptal",
+    "Search your group...": "Gruplarda ara...",
+    "No groups found": "Grup bulunamadı",
     "Sign in with Google": "Google ile giriş yap",
     "Change Language": "Dili değiştir"
 }

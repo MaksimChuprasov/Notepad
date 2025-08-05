@@ -8,6 +8,7 @@
     "Search for groups...": "Rechercher des groupes...",
     "New Group": "Nouveau Groupe",
     "Group saved": "Groupe enregistré",
+    "Title": "Titre",
     "Title is required": "Le titre est requis",
     "Shared with groups": "Partagé avec des groupes",
     "Enter your task": "Entrez votre tâche",
@@ -16,6 +17,8 @@
     "You didn`t save your note. Save this note?": "Vous n'avez pas enregistré votre note. Voulez-vous l'enregistrer ?",
     "Save": "Enregistrer",
     "Cancel": "Annuler",
+    "Search your group...": "Rechercher parmi les groupes...",
+    "No groups found": "Aucun groupe trouvé",
     "Sign in with Google": "Se connecter avec Google",
     "Change Language": "Changer la langue"
 }

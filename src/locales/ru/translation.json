@@ -8,6 +8,7 @@
     "Search for groups...": "Поиск по группам...",
     "New Group": "Новая Группа",
     "Group saved": "Группа сохранена",
+    "Title": "Заголовок",
     "Title is required": "Введите заголовок",
     "Shared with groups": "Доступно группам",
     "Enter your task": "Введите текст задачи",
@@ -16,6 +17,8 @@
     "You didn`t save your note. Save this note?": "Вы не сохранили заметку. Сохранить эту заметку?",
     "Save": "Сохранить",
     "Cancel": "Нет",
+    "Search your group...": "Поиск по группам...",
+    "No groups found": "Группы не найдены",
     "Sign in with Google": "Войти через Google",
     "Change Language": "Сменить язык"
 }

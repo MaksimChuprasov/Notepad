@@ -10,6 +10,7 @@
     "Search for groups...": "Search for groups...",
     "New Group": "New Group",
     "Group saved": "Group saved",
+    "Title": "Title",
     "Title is required": "Title is required",
     "Shared with groups": "Shared with groups",
     "Enter your task": "Enter your task",
@@ -18,6 +19,8 @@
     "You didn`t save your note. Save this note?": "You didn`t save your note. Save this note?",
     "Save": "Save",
     "Cancel": "Cancel",
+    "Search your group...": "Search your group...",
+    "No groups found": "No groups found",
     "Sign in with Google": "Sign in with Google",
     "Change Language": "Change Language"
 }

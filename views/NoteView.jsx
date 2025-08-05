@@ -421,6 +421,11 @@ const NoteView = ({ navigation, route }) => {
       }
   }; */
 
+    const filteredGroups = groups.filter(group =>
+        group.name.toLowerCase().includes(searchCollaborator.toLowerCase())
+    );
+
+
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <View style={{
@@ -432,7 +437,7 @@ const NoteView = ({ navigation, route }) => {
                             <TouchableOpacity className="mx-2" onPress={handleBackPress}>
                                 <Image
                                     source={require('../images/back.png')}
-                                    className="w-8 h-8 mt-4"
+                                    className="w-10 h-10 mt-4"
                                 />
                             </TouchableOpacity>
 
@@ -448,7 +453,7 @@ const NoteView = ({ navigation, route }) => {
                             <TouchableOpacity className="mx-2" onPress={saveNote}>
                                 <Image
                                     source={require('../images/saveBtn.png')}
-                                    className="w-8 h-8 mt-4"
+                                    className="w-10 h-10 mt-4"
                                 />
                             </TouchableOpacity>
                         </View>
@@ -826,12 +831,12 @@ const NoteView = ({ navigation, route }) => {
                                                 value={searchCollaborator}
                                                 onChangeText={setSearchCollaborator}
                                                 className="border border-[#ddd] bg-white rounded-md mt-1 p-2 flex-1 h-10 max-h-10"
-                                                placeholder="Search your group..."
+                                                placeholder={t("Search your group...")}
                                             />
 
                                             <ScrollView>
-                                                {groups.map((group, id) => {
-                                                    const isLast = id === groups.length - 1;
+                                                {filteredGroups.map((group, id) => {
+                                                    const isLast = id === filteredGroups.length - 1;
                                                     const isSelected = selectedGroupIds.includes(group.id);
 
                                                     return (
@@ -839,7 +844,6 @@ const NoteView = ({ navigation, route }) => {
                                                             key={group.id}
                                                             className={`py-2 ${!isLast ? 'border-b border-gray-300' : ''}`}
                                                             onPress={() => handleGroupSelect(group.id)}
-
                                                         >
                                                             <View className="flex-row">
                                                                 <Image
@@ -856,9 +860,9 @@ const NoteView = ({ navigation, route }) => {
                                                     );
                                                 })}
 
-                                                {groups.length === 0 && (
+                                                {filteredGroups.length === 0 && (
                                                     <View className="p-4 items-center">
-                                                        <Text className="text-gray-500">No groups found</Text>
+                                                        <Text className="text-gray-500">{t('No groups found')}</Text>
                                                     </View>
                                                 )}
                                             </ScrollView>
