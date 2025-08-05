@@ -7,6 +7,7 @@ import SocialView from "../views/SocialView";
 import NoteView from "../views/NoteView";
 import ProfileView from "../views/ProfileView";
 import NoteContext, { NoteProvider } from "./NoteContext";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   NavigationContainer,
   NavigationIndependentTree,
@@ -55,12 +56,14 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <NoteProvider>
-      <NavigationIndependentTree>
-        <NavigationContainer ref={navigationRef}>
-          <AppWithAuth navigationRef={navigationRef} />
-        </NavigationContainer>
-      </NavigationIndependentTree>
-    </NoteProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NoteProvider>
+        <NavigationIndependentTree>
+          <NavigationContainer ref={navigationRef}>
+            <AppWithAuth navigationRef={navigationRef} />
+          </NavigationContainer>
+        </NavigationIndependentTree>
+      </NoteProvider>
+    </GestureHandlerRootView>
   );
 }

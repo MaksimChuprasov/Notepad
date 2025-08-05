@@ -1,18 +1,21 @@
-import React, { useState, useContext, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Pressable, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useContext, useEffect, useCallback, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Pressable, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import Note from '../components/Note';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import SwipeableNote from '../components/SwipeableNote';
+import { PanGestureHandler, FlatList } from 'react-native-gesture-handler';
 
 const HomeView = ({ navigation }) => {
     const [filteredNotes, setFilteredNotes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes } = useContext(NoteContext);
+    const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes, setNotes, setHiddenNotes, } = useContext(NoteContext);
     const { t } = useTranslation();
+    const scrollRef = useRef(null);
 
     const refreshPage = () => {
         loadNotes();
@@ -129,63 +132,69 @@ const HomeView = ({ navigation }) => {
     return (
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
             <StatusBar style="dark" />
+
+            {/* Обертка для области, где нужно ловить нажатия вне выбора */}
             <TouchableWithoutFeedback onPress={handleOutsidePress}>
-                <View className="flex-1">
-                    <View className="bg-[#F7F7F7] flex-1 px-2">
-                        <View className="p-2 flex-row items-center">
-                            <TextInput
-                                className="border border-[#ddd] bg-white rounded-md p-2 flex-1"
-                                placeholder={t('Search...')}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
-                            {selectedNotes.length > 0 && (
-                                <TouchableOpacity
-                                    onPress={handleDeleteSelected}
-                                    className="ml-2"
-                                >
-                                    <Image
-                                        source={require('../images/bin.png')}
-                                        className="w-8 h-8"
-                                    />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                        <FlatList
-                            data={filteredNotes}
-                            numColumns={2}
-                            keyExtractor={(item) => item.id}
-                            columnWrapperStyle="justify-between px-4 mb-4"
-                            renderItem={({ item }) => (
-                                <Pressable
-                                    onLongPress={() => handleLongPress(item)}
-                                    onPress={() => handlePress(item)}
-                                    className="flex-1 mx-1"
-                                >
-                                    <Note
-                                        note={item}
-                                        isSelected={selectedNotes.includes(item.id)}
-                                        formattedDate={formatDate(item.date)}
-                                    />
-                                </Pressable>
-                            )}
-                            showsVerticalScrollIndicator={false}
+                <View>
+                    <View className="p-2 flex-row items-center">
+                        <TextInput
+                            className="border border-[#ddd] bg-white rounded-md p-2 flex-1"
+                            placeholder={t('Search...')}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
                         />
+                        {selectedNotes.length > 0 && (
+                            <TouchableOpacity onPress={handleDeleteSelected} className="ml-2">
+                                <Image source={require('../images/bin.png')} className="w-8 h-8" />
+                            </TouchableOpacity>
+                        )}
                     </View>
-                    <TouchableOpacity
-                        onPress={refreshPage}
-                        className="absolute bottom-4 right-4 w-14 h-14 bg-white rounded-full shadow-lg items-center justify-center border border-gray-400"
-                        activeOpacity={0.7}
-                    >
-                        <Image
-                            source={require('../images/refresh.png')}
-                            className="w-8 h-8"
-                            resizeMode="contain"
-                        />
-                    </TouchableOpacity>
                 </View>
             </TouchableWithoutFeedback>
+
+            {/* Сам FlatList — отдельно, без TouchableWithoutFeedback */}
+            <View className="flex-1 bg-[#F7F7F7] px-2">
+                <FlatList
+                    ref={scrollRef}
+                    data={filteredNotes}
+                    extraData={selectedNotes}
+                    numColumns={2}
+                    keyExtractor={(item) => item.id}
+                    columnWrapperStyle={{
+                        justifyContent: 'space-between',
+                        gap: 6,
+                        paddingHorizontal: 4,
+                    }}
+                    renderItem={({ item }) => (
+                        <SwipeableNote
+                            scrollRef={scrollRef}
+                            note={item}
+                            onPress={() => handlePress(item)}
+                            onLongPress={() => handleLongPress(item)}
+                            isSelected={selectedNotes.includes(item.id)}
+                            onSwipe={(id) => {
+                                setNotes(prev => prev.filter(note => note.id !== id));
+                                setHiddenNotes(prev => [...prev, item]);
+                            }}
+                        />
+                    )}
+                    showsVerticalScrollIndicator={false}
+                />
+            </View>
+
+            <TouchableOpacity
+                onPress={refreshPage}
+                className="absolute bottom-4 right-4 w-14 h-14 bg-white rounded-full shadow-lg items-center justify-center border border-gray-400"
+                activeOpacity={0.7}
+            >
+                <Image
+                    source={require('../images/refresh.png')}
+                    className="w-8 h-8"
+                    resizeMode="contain"
+                />
+            </TouchableOpacity>
         </SafeAreaView>
+
     );
 };
 

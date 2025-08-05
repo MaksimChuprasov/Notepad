@@ -1,9 +1,9 @@
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, Pressable } from 'react-native';
 import React, { useEffect } from 'react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 
-const Note = ({ note, isSelected }) => {
+const Note = ({ note, isSelected, onPress, onLongPress }) => {
 
     const { t } = useTranslation();
     const formattedDate = note?.createdAt
@@ -11,9 +11,11 @@ const Note = ({ note, isSelected }) => {
         : '';
 
     return (
-        <View
-            className={`flex-1 bg-white rounded-3xl p-4 pb-0 mb-4 border
-    ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 160 }}>
+        <Pressable
+            onPress={onPress}
+            onLongPress={onLongPress}
+            className={`flex-1 bg-white rounded-3xl p-4 pb-0 mb-4 border w-[161px] h-48
+    ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 192 }}>
             <View className='flex flex-row justify-between items-center mb-2 mr-4'>
                 {/* Title */}
                 {note?.title && (
@@ -97,7 +99,7 @@ const Note = ({ note, isSelected }) => {
                     {formattedDate}
                 </Text>
             </View>
-        </View>
+        </Pressable>
     );
 };
 

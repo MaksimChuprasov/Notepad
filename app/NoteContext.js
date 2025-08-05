@@ -19,6 +19,7 @@ export const NoteProvider = ({ children }) => {
   const [isAppReady, setIsAppReady] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [hiddenNotes, setHiddenNotes] = useState([]);
 
   const isSigningInRef = useRef(false);
 
@@ -670,6 +671,8 @@ export const NoteProvider = ({ children }) => {
     <NoteContext.Provider
       value={{
         notes,
+        setNotes,
+        setHiddenNotes,
         loadNotes,
         addNote,
         updateNote,
