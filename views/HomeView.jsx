@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect, useCallback, useRef } from 'rea
 import { View, Text, TextInput, TouchableOpacity, Pressable, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
+import HiddenNotesModal from "../components/HiddenNotesModal"
 import Note from '../components/Note';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
@@ -13,9 +14,10 @@ const HomeView = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes, setNotes, setHiddenNotes, } = useContext(NoteContext);
+    const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes, setNotes, hiddenNotes, setHiddenNotes, } = useContext(NoteContext);
     const { t } = useTranslation();
     const scrollRef = useRef(null);
+    const [showHidden, setShowHidden] = useState(false);
 
     const refreshPage = () => {
         loadNotes();
@@ -181,6 +183,34 @@ const HomeView = ({ navigation }) => {
                     showsVerticalScrollIndicator={false}
                 />
             </View>
+
+            <TouchableOpacity
+                onPress={() => setShowHidden(true)}
+                className="absolute bottom-20 right-4 w-14 h-14 bg-white rounded-full shadow-lg items-center justify-center border border-gray-400"
+                activeOpacity={0.7}
+            >
+                <Image
+                    source={require('../images/hidden.png')}
+                    className="w-10 h-10"
+                    resizeMode="contain"
+                />
+            </TouchableOpacity>
+
+            <HiddenNotesModal
+                visible={showHidden}
+                onClose={() => setShowHidden(false)}
+                hiddenNotes={hiddenNotes}
+                onRestore={(selectedIds) => {
+                    // перемести обратно в общие заметки
+                    const toRestore = hiddenNotes.filter(note => selectedIds.includes(note.id));
+                    setNotes((prev) => [...prev, ...toRestore]);
+                    setHiddenNotes((prev) => prev.filter(note => !selectedIds.includes(note.id)));
+                }}
+                renderNote={(note) => (
+                    <Note note={note} />
+                )}
+            />
+
 
             <TouchableOpacity
                 onPress={refreshPage}

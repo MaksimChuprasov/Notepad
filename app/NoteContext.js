@@ -672,6 +672,7 @@ export const NoteProvider = ({ children }) => {
       value={{
         notes,
         setNotes,
+        hiddenNotes,
         setHiddenNotes,
         loadNotes,
         addNote,
