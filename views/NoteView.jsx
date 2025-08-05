@@ -11,6 +11,7 @@ import TitleInput from '../components/TitleInput.jsx'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import DraggableFlatList from "react-native-draggable-flatlist";
 
 const NoteView = ({ navigation, route }) => {
     const { StorageAccessFramework } = FileSystem;
@@ -254,6 +255,10 @@ const NoteView = ({ navigation, route }) => {
         },
     });
 
+    const deleteTask = (id) => {
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+    };
+
 
     /* Functions for files and photos */
 
@@ -466,7 +471,7 @@ const NoteView = ({ navigation, route }) => {
                             </View>
                         )}
                     </View>
-                    <ScrollView className='flex-1 mb-4' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
+                    <View className='flex-1 mb-4 mt-3' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
 
 
                         {/* <View className="px-3 mb-2">
@@ -547,34 +552,54 @@ const NoteView = ({ navigation, route }) => {
                             </TouchableWithoutFeedback>
                         </Modal> */}
 
-                        {tasks.map((task) => (
-                            <View
-                                key={task.id}
-                                className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 mx-3 border border-gray-200 shadow-sm"
-                            >
-                                {/* Чекбокс */}
-                                <Pressable
-                                    onPress={() => toggleCheckbox(task.id)}
-                                    className={`w-5 h-5 rounded-full border-2 mr-3 ${task.checked ? 'border-green-500 bg-green-500' : 'border-gray-400'
-                                        } items-center justify-center`}
-                                >
-                                    {task.checked && <Text className="text-white text-xs">✔</Text>}
-                                </Pressable>
+                        <DraggableFlatList
+                            data={tasks}
+                            onDragEnd={({ data }) => setTasks(data)}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item, index, drag, isActive }) => (
+                                <TouchableOpacity className="mb-2 mx-3">
+                                    <View
+                                        className="flex-row items-center bg-white rounded-xl px-2 py-2 border border-gray-200 shadow-sm"
+                                        style={{
+                                            opacity: isActive ? 0.8 : 1,
+                                            transform: [{ scale: isActive ? 0.98 : 1 }],
+                                        }}
+                                    >
+                                        <TouchableOpacity onPressIn={drag}>
+                                            <Image source={require('../images/drag-task.png')} className="w-7 h-7" />
+                                        </TouchableOpacity>
+                                        {/* Чекбокс */}
+                                        <Pressable
+                                            onPress={() => toggleCheckbox(item.id)}
+                                            className={`w-5 h-5 rounded-full border-2 mr-3 ${item.checked ? 'border-green-500 bg-green-500' : 'border-gray-400'
+                                                } items-center justify-center`}
+                                        >
+                                            {item.checked && <Text className="text-white text-xs">✔</Text>}
+                                        </Pressable>
 
-                                {/* Текст задачи */}
-                                <TextInput
-                                    multiline
-                                    textAlignVertical="center"
-                                    value={task.text}
-                                    onChangeText={(text) => updateTask(task.id, text)}
-                                    placeholder={t("Enter your task")}
-                                    placeholderTextColor="#9ca3af"
-                                    className={`flex-1 text-[15px] text-gray-800 py-1 ${task.checked ? 'line-through text-gray-400' : ''
-                                        }`}
-                                    style={{ minHeight: 30 }}
-                                />
-                            </View>
-                        ))}
+                                        {/* Текст задачи */}
+                                        <TextInput
+                                            multiline
+                                            value={item.text}
+                                            onChangeText={(text) => updateTask(item.id, text)}
+                                            placeholder={t("Enter your task")}
+                                            placeholderTextColor="#9ca3af"
+                                            className={`flex-1 text-[15px] text-gray-800 py-1 ${item.checked ? 'line-through text-gray-400' : ''
+                                                }`}
+                                            style={{ minHeight: 30 }}
+                                        />
+
+                                        {/* Кнопка удаления */}
+                                        <TouchableOpacity onPress={() => deleteTask(item.id)} className="ml-2">
+                                            <Image
+                                                source={require('../images/bin.png')}
+                                                className="w-7 h-7"
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                        />
 
                         <TextInput
                             className="p-4 my-2 mx-3 bg-gray-50 rounded-xl shadow-md text-gray-900 text-base"
@@ -651,7 +676,7 @@ const NoteView = ({ navigation, route }) => {
                         </Modal> */}
 
 
-                    </ScrollView>
+                    </View>
 
                     <View className="bg-[#F7F7F7] py-2 px-6 absolute bottom-0 left-0 w-full">
                         <View className="flex-row">
