@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Note from "./Note"
 import {
     Modal,
@@ -88,6 +89,7 @@ export default function HiddenNotesModal({
     };
 
     const isSelected = (id) => selected.includes(id.toString());
+    const { t } = useTranslation();
 
     return (
         <Modal visible={visible} transparent animationType="none">
@@ -113,7 +115,7 @@ export default function HiddenNotesModal({
                     {/* Полоска сверху */}
                     <View className="w-12 h-1.5 bg-gray-400 rounded-full self-center mb-4" />
 
-                    <Text className="text-xl font-bold mb-4 text-center">Скрытые заметки</Text>
+                    <Text className="text-xl font-bold mb-4 text-center">{t('Hidden notes')}</Text>
 
                     <FlatList
                         data={hiddenNotes}
@@ -148,7 +150,7 @@ export default function HiddenNotesModal({
               `}
                     >
                         <Text className="text-white text-center font-semibold">
-                            Вернуть ({selected.length})
+                            {t('Restore')} ({selected.length})
                         </Text>
                     </Pressable>
                 </Animated.View>

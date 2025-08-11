@@ -8,7 +8,7 @@
     "Search for groups...": "Gruplarda ara...",
     "New Group": "Yeni Grup",
     "Group saved": "Grup kaydedildi",
-     "Title": "Başlık",
+    "Title": "Başlık",
     "Title is required": "Başlık gerekli",
     "Shared with groups": "Gruplarla paylaşıldı",
     "Enter your task": "Görevinizi girin",
@@ -20,5 +20,7 @@
     "Search your group...": "Gruplarda ara...",
     "No groups found": "Grup bulunamadı",
     "Sign in with Google": "Google ile giriş yap",
-    "Change Language": "Dili değiştir"
+    "Change Language": "Dili değiştir",
+    "Hidden notes": "Gizli notlar",
+    "Restore": "Geri yükle"
 }

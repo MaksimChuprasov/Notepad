@@ -14,7 +14,7 @@ const HomeView = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes = [], addNote, loadNotes, updateNote, deleteNotes, setNotes, hiddenNotes, setHiddenNotes, } = useContext(NoteContext);
+    const { notes: contextNotes = [], notes, addNote, loadNotes, updateNote, deleteNotes, setNotes, hiddenNotes, setHiddenNotes, } = useContext(NoteContext);
     const { t } = useTranslation();
     const scrollRef = useRef(null);
     const [showHidden, setShowHidden] = useState(false);
@@ -153,7 +153,7 @@ const HomeView = ({ navigation }) => {
             <View className="flex-1 bg-[#F7F7F7] px-2">
                 <FlatList
                     ref={scrollRef}
-                    data={filteredNotes}
+                    data={filteredNotes.filter(note => !note.hidden)}
                     extraData={selectedNotes}
                     numColumns={2}
                     keyExtractor={(item) => item.id}
@@ -169,8 +169,11 @@ const HomeView = ({ navigation }) => {
                             onLongPress={() => handleLongPress(item)}
                             isSelected={selectedNotes.includes(item.id)}
                             onSwipe={(id) => {
-                                setNotes(prev => prev.filter(note => note.id !== id));
-                                setHiddenNotes(prev => [...prev, item]);
+                                const noteToUpdate = notes.find(n => n.id === id);
+                                if (!noteToUpdate) return;
+
+                                const updatedNote = { ...noteToUpdate, hidden: true };
+                                updateNote(updatedNote);
                             }}
                         />
                     )}
@@ -193,12 +196,21 @@ const HomeView = ({ navigation }) => {
             <HiddenNotesModal
                 visible={showHidden}
                 onClose={() => setShowHidden(false)}
-                hiddenNotes={hiddenNotes}
+                hiddenNotes={notes.filter(note => note.hidden)}
                 onRestore={(selectedIds) => {
-                    // перемести обратно в общие заметки
-                    const toRestore = hiddenNotes.filter(note => selectedIds.includes(note.id));
-                    setNotes((prev) => [...prev, ...toRestore]);
-                    setHiddenNotes((prev) => prev.filter(note => !selectedIds.includes(note.id)));
+                    setNotes(prev =>
+                        prev.map(note =>
+                            selectedIds.includes(note.id)
+                                ? { ...note, hidden: false }
+                                : note
+                        )
+                    );
+                    selectedIds.forEach(id => {
+                        const noteToRestore = notes.find(n => n.id === id);
+                        if (noteToRestore) {
+                            updateNote({ ...noteToRestore, hidden: false });
+                        }
+                    });
                 }}
                 renderNote={(note) => (
                     <Note note={note} />
