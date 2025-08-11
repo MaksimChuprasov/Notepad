@@ -5,6 +5,7 @@ import { registerForPushNotifications } from "../hooks/registerForPushNotificati
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { navigate } from "../app/navigationRef";
 
 const NoteContext = createContext();
 
@@ -20,6 +21,7 @@ export const NoteProvider = ({ children }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [hiddenNotes, setHiddenNotes] = useState([]);
+  const [pendingNoteId, setPendingNoteId] = useState(null);
 
   const isSigningInRef = useRef(false);
 
@@ -45,16 +47,37 @@ export const NoteProvider = ({ children }) => {
     // Notification Click Listener
     const responseListener =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("👆 Notification tapped:", response);
-        loadNotes();
+        const data = response.notification.request.content.data;
+        console.log("Notification data:", data);
+
+        if (data && data.note_id) {
+          const foundNote = notes.find((n) => n.id === data.note_id);
+          if (foundNote) {
+            navigate("Note", { noteToEdit: foundNote });
+          } else {
+            console.log("⏳ Заметка ещё не загружена, ждём...");
+            setPendingNoteId(data.note_id);
+          }
+        } else {
+          loadNotes();
+        }
       });
 
-    // Clearing listeners when unmounting a component
     return () => {
       notificationListener.remove();
       responseListener.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (pendingNoteId && notes.length > 0) {
+      const foundNote = notes.find((n) => n.id === pendingNoteId);
+      if (foundNote) {
+        navigate("Note", { noteToEdit: foundNote });
+        setPendingNoteId(null); // сбрасываем
+      }
+    }
+  }, [notes, pendingNoteId]);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -150,6 +173,7 @@ export const NoteProvider = ({ children }) => {
   const saveToken = async () => {
     try {
       const expoToken = await registerForPushNotifications();
+      console.log(expoToken);
 
       if (expoToken) {
         setExpoPushToken(expoToken);
@@ -175,7 +199,6 @@ export const NoteProvider = ({ children }) => {
 
   // update token function
   const updateToken = (newToken) => {
-    console.log("[newToken]", newToken);
     setToken(newToken);
   };
 
@@ -209,8 +232,6 @@ export const NoteProvider = ({ children }) => {
       return;
     }
 
-    console.log("[loadNotes] Запрос с токеном:", ensuredToken);
-
     try {
       const response = await fetch("https://notepad.faceqd.site/api/v1/notes", {
         headers: {
@@ -236,7 +257,6 @@ export const NoteProvider = ({ children }) => {
       );
 
       setNotes(notesWithDates);
-      console.log("[loadNotes] Notes updated");
     } catch (error) {
       console.error("Ошибка загрузки заметок:", error.message);
     }
@@ -623,7 +643,6 @@ export const NoteProvider = ({ children }) => {
       try {
         const savedToken = await AsyncStorage.getItem("userToken");
         if (savedToken) {
-          console.log("[savedToken]", savedToken);
           setToken(savedToken);
           setIsLoggedIn(true);
 
@@ -634,7 +653,6 @@ export const NoteProvider = ({ children }) => {
             setEmail(user.email);
           }
         } else {
-          console.log("[savedToken2]", savedToken);
           // Если токена нет, сбрасываем состояние
           setToken(null);
           setIsLoggedIn(false);

@@ -26,20 +26,10 @@ const resources = {
 };
 
 const getInitialLanguage = async () => {
-  const savedLang = await AsyncStorage.getItem(LANG_STORAGE_KEY);
-
-  const locales = Localization.getLocales();
-  const localeLang =
-    locales && locales.length > 0 ? locales[0].languageCode : "en";
-
-  const lang = ["en", "ru"].includes(savedLang)
-    ? savedLang
-    : ["en", "ru"].includes(localeLang)
-    ? localeLang
-    : "en";
-
-  return lang;
+  // Заменить на фикс "en" для теста
+  return "en";
 };
+
 
 export const initI18n = async () => {
   const lng = await getInitialLanguage();

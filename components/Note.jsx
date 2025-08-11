@@ -27,7 +27,7 @@ const Note = ({ note, isSelected, onPress, onLongPress }) => {
                         {note.title}
                     </Text>
                 )}
-                {note.selectedGroupIds.length > 0 && (
+                {Array.isArray(note.selectedGroupIds) && note.selectedGroupIds.length > 0 && (
                     <Image
                         source={require('../images/group-check.png')}
                         className="w-5 h-5"
@@ -38,7 +38,7 @@ const Note = ({ note, isSelected, onPress, onLongPress }) => {
 
 
             {/* Tasks */}
-            {note?.tasks?.length > 0 && (
+            {Array.isArray(note?.tasks) && note.tasks.length > 0 && (
                 <View className="mt-1 space-y-1">
                     {note.tasks.slice(0, 3).map((task, i) => (
                         <View key={i} className="flex-row items-center space-x-3 mb-1">

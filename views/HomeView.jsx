@@ -14,7 +14,7 @@ const HomeView = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes, addNote, loadNotes, updateNote, deleteNotes, setNotes, hiddenNotes, setHiddenNotes, } = useContext(NoteContext);
+    const { notes: contextNotes = [], addNote, loadNotes, updateNote, deleteNotes, setNotes, hiddenNotes, setHiddenNotes, } = useContext(NoteContext);
     const { t } = useTranslation();
     const scrollRef = useRef(null);
     const [showHidden, setShowHidden] = useState(false);
@@ -33,24 +33,17 @@ const HomeView = ({ navigation }) => {
         setFilteredNotes(contextNotes);
     }, [contextNotes]);
 
-    const filterNotes = (notes, query) => {
+    const filterNotes = (notes = [], query) => {
         const lowercasedQuery = query.toLowerCase();
-
         return notes.filter(note =>
             (note.text || '').toLowerCase().includes(lowercasedQuery) ||
-            (note.title || '').toLowerCase().includes(lowercasedQuery) /* ||
-            (note.files || []).some(file =>
-                typeof file === 'string'
-                    ? file.toLowerCase().includes(lowercasedQuery)
-                    : file.name?.toLowerCase().includes(lowercasedQuery)
-            ) */
+            (note.title || '').toLowerCase().includes(lowercasedQuery)
         );
     };
 
     useEffect(() => {
         if (Array.isArray(contextNotes)) {
             const filtered = filterNotes(contextNotes, searchQuery);
-
             // Сортируем от новых к старым по createdAt
             const sorted = filtered.slice().sort((a, b) => {
                 const dateA = new Date(a.createdAt || 0).getTime();
@@ -59,6 +52,8 @@ const HomeView = ({ navigation }) => {
             });
 
             setFilteredNotes(sorted);
+        } else {
+            setFilteredNotes([]); // на всякий случай очистить
         }
     }, [searchQuery, contextNotes]);
 

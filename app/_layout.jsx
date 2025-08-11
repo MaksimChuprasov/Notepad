@@ -1,5 +1,5 @@
-import i18n, { initI18n } from '../src/i18n';
 import React, { useEffect, useContext, useRef, useState } from "react";
+import i18n, { initI18n } from '../src/i18n';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CustomTabBar from "../components/CustomTabBar";
 import HomeView from "../views/HomeView";
@@ -8,6 +8,7 @@ import NoteView from "../views/NoteView";
 import ProfileView from "../views/ProfileView";
 import NoteContext, { NoteProvider } from "./NoteContext";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { navigationRef } from './navigationRef'; 
 import {
   NavigationContainer,
   NavigationIndependentTree,
@@ -44,12 +45,11 @@ const AppWithAuth = ({ navigationRef }) => {
 };
 
 export default function RootLayout() {
-  const navigationRef = useNavigationContainerRef();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     async function prepare() {
-      await initI18n(); // инициализация
+      await initI18n();
       setIsReady(true);
     }
     prepare();
