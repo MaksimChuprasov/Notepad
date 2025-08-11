@@ -205,8 +205,9 @@ const SocialView = () => {
                                     <View
                                         className={`p-3 bg-white rounded-xl shadow-md border-2 border-transparent ${selectedGroups.includes(item.id) ? 'border-2 border-blue-500' : ''}`}
                                     >
-                                        <View className='flex flex-row items-center justify-between'>
+                                        <View className='flex flex-row items-center w-full justify-between'>
                                             <Pressable
+                                                className='w-[75%]'
                                                 onLongPress={() => handleLongPress(item)}
                                                 onPress={() => {
                                                     if (!selectMode) {
@@ -216,7 +217,7 @@ const SocialView = () => {
                                                     }
                                                 }}
                                             >
-                                                <View className={" bg-white rounded-xl shadow-md w-60 min-h-[30px]"}>
+                                                <View className={" bg-white rounded-xl shadow-md w-full min-h-[30px]"}>
                                                     {editingGroupId === item.id ? (
                                                         <TextInput
                                                             value={item.name}
@@ -268,9 +269,9 @@ const SocialView = () => {
                                                             handleChangeCollaboratorName(text, item.id, collab.id)
                                                         }
                                                         placeholder="example@example.com"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 my-1 bg-white w-[275px]"
+                                                        className="border border-gray-300 rounded-md px-3 py-2 my-1 bg-white w-[87%]"
                                                     />
-                                                    <TouchableOpacity onPress={() => handleDeleteCollaborator(item.id, collab.id)} className="ml-[6px]">
+                                                    <TouchableOpacity onPress={() => handleDeleteCollaborator(item.id, collab.id)} className="">
                                                         <Image
                                                             source={require('../images/bin.png')}
                                                             className="w-8 h-8"

@@ -158,7 +158,6 @@ const HomeView = ({ navigation }) => {
                     numColumns={2}
                     keyExtractor={(item) => item.id}
                     columnWrapperStyle={{
-                        justifyContent: 'space-between',
                         gap: 6,
                         paddingHorizontal: 4,
                     }}

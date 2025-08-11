@@ -14,7 +14,7 @@ const Note = ({ note, isSelected, onPress, onLongPress }) => {
         <Pressable
             onPress={onPress}
             onLongPress={onLongPress}
-            className={`flex-1 bg-white rounded-3xl p-4 pb-0 mb-4 border w-[161px] h-48
+            className={`flex-1 bg-white rounded-3xl p-4 pb-0 mb-4 border w-full h-48
     ${isSelected ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`} style={{ minHeight: 192 }}>
             <View className='flex flex-row justify-between items-center mb-2 mr-4'>
                 {/* Title */}

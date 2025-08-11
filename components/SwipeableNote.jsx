@@ -56,6 +56,7 @@ const SwipeableNote = ({ note, onPress, onLongPress, isSelected, onSwipe, scroll
         opacity: opacity.value,
         height: height.value,
         marginVertical: 0,
+        width: '49%',
     }));
 
     return (
