@@ -43,6 +43,8 @@ const NoteView = ({ navigation, route }) => {
     const [tasks, setTasks] = useState([]);
     const [searchCollaborator, setSearchCollaborator] = useState('');
     const [selectedGroupIds, setSelectedGroupIds] = useState([]);
+    const [focusedTaskId, setFocusedTaskId] = useState(null);
+
     const { t } = useTranslation();
 
     const insets = useSafeAreaInsets();
@@ -58,12 +60,26 @@ const NoteView = ({ navigation, route }) => {
     };
 
     // Function to add a new task
+    const flatListRef = useRef(null);
+
+    const [pendingFocusId, setPendingFocusId] = useState(null);
+
     const addTask = () => {
-        setTasks(prevTasks => [
-            ...prevTasks,
-            { id: Date.now().toString(), text: '', checked: false }
-        ]);
+        const newTask = { id: Date.now().toString(), text: '', checked: false };
+        setTasks(prev => [...prev, newTask]);
+        setPendingFocusId(newTask.id);  // сохраняем id, чтобы потом сфокусировать
     };
+
+    useEffect(() => {
+        if (flatListRef.current && tasks.length > 0 && pendingFocusId) {
+            flatListRef.current.scrollToEnd({ animated: true });
+            // Через setTimeout или requestAnimationFrame отложить установку фокуса
+            requestAnimationFrame(() => {
+                setFocusedTaskId(pendingFocusId);
+                setPendingFocusId(null);
+            });
+        }
+    }, [tasks, pendingFocusId]);
 
     // Task text update function
     const updateTask = (id, newText) => {
@@ -432,51 +448,49 @@ const NoteView = ({ navigation, route }) => {
                 paddingTop: insets.top,
             }} className=" h-full bg-white">
                 <View className="flex-1">
-                    <View>
-                        <View className="flex-row items-center">
-                            <TouchableOpacity className="mx-2" onPress={handleBackPress}>
-                                <Image
-                                    source={require('../images/back.png')}
-                                    className="w-10 h-10 mt-4"
-                                />
-                            </TouchableOpacity>
-
-                            <TitleInput className="w-full"
-                                value={title}
-                                onChangeText={(text) => {
-                                    setTitle(text);
-                                    if (text.trim()) setTitleError('');
-                                }}
-                                errorMessage={titleError}
+                    <View className="flex-row items-center">
+                        <TouchableOpacity className="mx-2" onPress={handleBackPress}>
+                            <Image
+                                source={require('../images/back.png')}
+                                className="w-10 h-10 mt-4"
                             />
+                        </TouchableOpacity>
 
-                            <TouchableOpacity className="mx-2" onPress={saveNote}>
-                                <Image
-                                    source={require('../images/saveBtn.png')}
-                                    className="w-10 h-10 mt-4"
-                                />
-                            </TouchableOpacity>
-                        </View>
+                        <TitleInput className="w-full"
+                            value={title}
+                            onChangeText={(text) => {
+                                setTitle(text);
+                                if (text.trim()) setTitleError('');
+                            }}
+                            errorMessage={titleError}
+                        />
 
-                        {/* Выбранные группы */}
-                        {selectedGroupIds.length > 0 && (
-                            <View className="mt-2 px-4">
-                                <Text className="text-gray-600 mb-1">{t('Shared with groups')}</Text>
-                                {groups
-                                    .filter(group => selectedGroupIds.includes(group.id))
-                                    .map(group => (
-                                        <View key={group.id} className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 border border-gray-200 shadow-sm">
-                                            <Image
-                                                source={require('../images/group-check.png')}
-                                                className="w-4 h-4 mr-2"
-                                            />
-                                            <Text className='pr-4' numberOfLines={1} ellipsizeMode="tail">{group.name}</Text>
-                                        </View>
-                                    ))}
-                            </View>
-                        )}
+                        <TouchableOpacity className="mx-2" onPress={saveNote}>
+                            <Image
+                                source={require('../images/saveBtn.png')}
+                                className="w-10 h-10 mt-4"
+                            />
+                        </TouchableOpacity>
                     </View>
-                    <View className='flex-1 mb-4 mt-3' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
+
+                    {/* Выбранные группы */}
+                    {selectedGroupIds.length > 0 && (
+                        <View className="mt-2 px-4">
+                            <Text className="text-gray-600 mb-1">{t('Shared with groups')}</Text>
+                            {groups
+                                .filter(group => selectedGroupIds.includes(group.id))
+                                .map(group => (
+                                    <View key={group.id} className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 border border-gray-200 shadow-sm">
+                                        <Image
+                                            source={require('../images/group-check.png')}
+                                            className="w-4 h-4 mr-2"
+                                        />
+                                        <Text className='pr-4' numberOfLines={1} ellipsizeMode="tail">{group.name}</Text>
+                                    </View>
+                                ))}
+                        </View>
+                    )}
+                    <View className='flex-1 mt-3 mb-36 mx-2' contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
 
 
                         {/* <View className="px-3 mb-2">
@@ -558,52 +572,62 @@ const NoteView = ({ navigation, route }) => {
                         </Modal> */}
 
                         <DraggableFlatList
+                            ref={flatListRef}
                             data={tasks}
-                            onDragEnd={({ data }) => setTasks(data)}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item, index, drag, isActive }) => (
-                                <TouchableOpacity className="mb-2 mx-3">
-                                    <View
-                                        className="flex-row items-center bg-white rounded-xl px-2 py-2 border border-gray-200 shadow-sm"
-                                        style={{
-                                            opacity: isActive ? 0.8 : 1,
-                                            transform: [{ scale: isActive ? 0.98 : 1 }],
-                                        }}
-                                    >
-                                        <TouchableOpacity onPressIn={drag}>
-                                            <Image source={require('../images/drag-task.png')} className="w-7 h-7" />
-                                        </TouchableOpacity>
-                                        {/* Чекбокс */}
-                                        <Pressable
-                                            onPress={() => toggleCheckbox(item.id)}
-                                            className={`w-5 h-5 rounded-full border-2 mr-3 ${item.checked ? 'border-green-500 bg-green-500' : 'border-gray-400'
-                                                } items-center justify-center`}
+                            keyExtractor={item => item.id}
+                            renderItem={({ item, index, drag, isActive }) => {
+                                const inputRef = useRef(null);
+
+                                useEffect(() => {
+                                    if (item.id === focusedTaskId && inputRef.current) {
+                                        inputRef.current.focus();
+                                        setFocusedTaskId(null);
+                                    }
+                                }, [focusedTaskId]);
+
+                                return (
+                                    <TouchableOpacity className="mb-2 mx-3">
+                                        <View
+                                            className="flex-row items-center bg-white rounded-xl px-2 py-2 border border-gray-200 shadow-sm"
+                                            style={{
+                                                opacity: isActive ? 0.8 : 1,
+                                                transform: [{ scale: isActive ? 0.98 : 1 }],
+                                            }}
                                         >
-                                            {item.checked && <Text className="text-white text-xs">✔</Text>}
-                                        </Pressable>
+                                            <TouchableOpacity onPressIn={drag}>
+                                                <Image source={require('../images/drag-task.png')} className="w-7 h-7" />
+                                            </TouchableOpacity>
 
-                                        {/* Текст задачи */}
-                                        <TextInput
-                                            multiline
-                                            value={item.text}
-                                            onChangeText={(text) => updateTask(item.id, text)}
-                                            placeholder={t("Enter your task")}
-                                            placeholderTextColor="#9ca3af"
-                                            className={`flex-1 text-[15px] text-gray-800 py-1 ${item.checked ? 'line-through text-gray-400' : ''
-                                                }`}
-                                            style={{ minHeight: 30 }}
-                                        />
+                                            <Pressable
+                                                onPress={() => toggleCheckbox(item.id)}
+                                                className={`w-5 h-5 rounded-full border-2 mr-3 ${item.checked ? 'border-green-500 bg-green-500' : 'border-gray-400'
+                                                    } items-center justify-center`}
+                                            >
+                                                {item.checked && <Text className="text-white text-xs">✔</Text>}
+                                            </Pressable>
 
-                                        {/* Кнопка удаления */}
-                                        <TouchableOpacity onPress={() => deleteTask(item.id)} className="ml-2">
-                                            <Image
-                                                source={require('../images/bin.png')}
-                                                className="w-7 h-7"
+                                            <TextInput
+                                                ref={inputRef}
+                                                multiline
+                                                value={item.text}
+                                                onChangeText={(text) => updateTask(item.id, text)}
+                                                placeholder={t("Enter your task")}
+                                                placeholderTextColor="#9ca3af"
+                                                className={`flex-1 text-[15px] text-gray-800 py-1 ${item.checked ? 'line-through text-gray-400' : ''
+                                                    }`}
+                                                style={{ minHeight: 30 }}
                                             />
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
-                            )}
+
+                                            <TouchableOpacity onPress={() => deleteTask(item.id)} className="ml-2">
+                                                <Image
+                                                    source={require('../images/bin.png')}
+                                                    className="w-7 h-7"
+                                                />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            }}
                         />
 
                         <TextInput
@@ -684,6 +708,7 @@ const NoteView = ({ navigation, route }) => {
                     </View>
 
                     <View className="bg-[#F7F7F7] py-2 px-6 absolute bottom-0 left-0 w-full">
+
                         <View className="flex-row">
                             {/* Первая кнопка */}
                             {/* <View className="items-center w-12">
@@ -932,8 +957,7 @@ const NoteView = ({ navigation, route }) => {
                     </Modal> */}
 
                 </View>
-
-            </View >
+            </View>
         </GestureHandlerRootView >
     );
 };

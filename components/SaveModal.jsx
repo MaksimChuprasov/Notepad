@@ -27,7 +27,7 @@ const SaveModal = ({ visible, onSave, onClose, onExit }) => {
                                 elevation: 10,
                             }}
                         >
-                            <Text className="text-xl font-semibold text-gray-800 mb-3">
+                            <Text className="text-xl text-center font-semibold text-gray-800 mb-3">
                                 {t('You didn`t save your note. Save this note?')}
                             </Text>
 
