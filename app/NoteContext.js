@@ -305,7 +305,7 @@ export const NoteProvider = ({ children }) => {
   };
 
   // Update note function
-  const updateNote = async (updatedNote) => {
+  const updateNote = async (updatedNote, updateState = true) => {
     if (!token) return;
 
     try {
@@ -325,19 +325,23 @@ export const NoteProvider = ({ children }) => {
         throw new Error("Error updating note on server");
       }
 
-      const newNotes = notes.map((note) =>
-        note.id === updatedNote.id ? updatedNote : note
-      );
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
+      if (updateState) {
+        const newNotes = notes.map((note) =>
+          note.id === updatedNote.id ? updatedNote : note
+        );
+        setNotes(newNotes);
+        saveNotesToStorage(newNotes);
+      }
     } catch (error) {
       console.warn("Ошибка при обновлении заметки, обновляем локально:", error);
 
-      const newNotes = notes.map((note) =>
-        note.id === updatedNote.id ? { ...updatedNote, unsynced: true } : note
-      );
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
+      if (updateState) {
+        const newNotes = notes.map((note) =>
+          note.id === updatedNote.id ? { ...updatedNote, unsynced: true } : note
+        );
+        setNotes(newNotes);
+        saveNotesToStorage(newNotes);
+      }
     }
   };
 

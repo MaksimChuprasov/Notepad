@@ -198,23 +198,26 @@ const HomeView = ({ navigation }) => {
                 onClose={() => setShowHidden(false)}
                 hiddenNotes={notes.filter(note => note.hidden)}
                 onRestore={(selectedIds) => {
-                    setNotes(prev =>
-                        prev.map(note =>
-                            selectedIds.includes(note.id)
+                    const normalizedIds = selectedIds.map(String);
+
+                    setNotes(prev => {
+                        const updatedNotes = prev.map(note =>
+                            normalizedIds.includes(String(note.id))
                                 ? { ...note, hidden: false }
                                 : note
-                        )
-                    );
-                    selectedIds.forEach(id => {
-                        const noteToRestore = notes.find(n => n.id === id);
-                        if (noteToRestore) {
-                            updateNote({ ...noteToRestore, hidden: false });
-                        }
+                        );
+
+                        // Отправляем на сервер, без обновления стейта
+                        updatedNotes.forEach(note => {
+                            if (normalizedIds.includes(String(note.id))) {
+                                updateNote(note, false); // false — не менять стейт здесь
+                            }
+                        });
+                        
+                        return updatedNotes;
                     });
                 }}
-                renderNote={(note) => (
-                    <Note note={note} />
-                )}
+
             />
 
 
