@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 const SocialView = () => {
     const { groups, setGroups, addGroup, updateGroup, deleteGroups } = useContext(NoteContext);
     const [searchQuery, setSearchQuery] = useState('');
+    const [editingGroupName, setEditingGroupName] = useState('');
+    const [collabInputs, setCollabInputs] = useState({});
     const [filteredGroups, setFilteredGroups] = useState([]);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [selectMode, setSelectMode] = useState(false);

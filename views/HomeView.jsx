@@ -156,7 +156,7 @@ const HomeView = ({ navigation }) => {
                     data={filteredNotes.filter(note => !note.hidden)}
                     extraData={selectedNotes}
                     numColumns={2}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.id.toString()}
                     columnWrapperStyle={{
                         gap: 6,
                         paddingHorizontal: 4,

@@ -574,7 +574,14 @@ const NoteView = ({ navigation, route }) => {
                         <DraggableFlatList
                             ref={flatListRef}
                             data={tasks}
-                            keyExtractor={item => item.id}
+                            onDragEnd={({ data }) => {
+                                setTasks(prevTasks => {
+                                    const isSameOrder = prevTasks.every((task, index) => task.id === data[index].id);
+                                    if (isSameOrder) return prevTasks; // порядок не изменился → не трогаем state
+                                    return data; // порядок изменился → обновляем
+                                });
+                            }}
+                            keyExtractor={item => item.id.toString()}
                             renderItem={({ item, index, drag, isActive }) => {
                                 const inputRef = useRef(null);
 
@@ -606,7 +613,7 @@ const NoteView = ({ navigation, route }) => {
                                                 {item.checked && <Text className="text-white text-xs">✔</Text>}
                                             </Pressable>
 
-                                            <TextInput
+                                            {<TextInput
                                                 ref={inputRef}
                                                 multiline
                                                 value={item.text}
@@ -616,7 +623,7 @@ const NoteView = ({ navigation, route }) => {
                                                 className={`flex-1 text-[15px] text-gray-800 py-1 ${item.checked ? 'line-through text-gray-400' : ''
                                                     }`}
                                                 style={{ minHeight: 30 }}
-                                            />
+                                            />}
 
                                             <TouchableOpacity onPress={() => deleteTask(item.id)} className="ml-2">
                                                 <Image
