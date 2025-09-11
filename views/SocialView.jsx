@@ -24,7 +24,6 @@ const SocialView = () => {
         return hasName && hasValidCollaborator;
     };
 
-    // Фильтрация групп по поиску
     useEffect(() => {
         if (!searchQuery) {
             setFilteredGroups(groups);
@@ -47,20 +46,18 @@ const SocialView = () => {
         }, [groups, searchQuery])
     );
 
-    // Управление режимом выбора групп
     useEffect(() => {
         if (selectedGroups.length === 0) setSelectMode(false);
     }, [selectedGroups]);
 
-    // Добавление новой группы через контекст
     const handleAddGroup = () => {
         const newGroup = {
             id: Date.now().toString(),
             name: t('New Group'),
             collaborators: [{ id: Date.now().toString(), name: '' }],
-            isDraft: true, // ⬅️ чтобы отличить несохранённую группу
+            isDraft: true,
         };
-        setGroups(prev => [...prev, newGroup]); // локально
+        setGroups(prev => [...prev, newGroup]);
     };
 
     const saveGroupName = (groupId) => {
@@ -80,12 +77,11 @@ const SocialView = () => {
         }
     };
 
-    // Изменение имени группы + обновление через API
     const handleChangeGroupName = (text, groupId) => {
         const updatedGroups = groups.map(group =>
             group.id === groupId ? { ...group, name: text } : group
         );
-        setGroups(updatedGroups); // только локально!
+        setGroups(updatedGroups);
     };
 
     const handleChangeCollaboratorName = (text, groupId, collabId) => {
@@ -98,7 +94,7 @@ const SocialView = () => {
             }
             return group;
         });
-        setGroups(updatedGroups); // только локально!
+        setGroups(updatedGroups);
     };
 
     const addCollaborator = (groupId) => {
@@ -128,7 +124,6 @@ const SocialView = () => {
         setGroups(updatedGroups);
     };
 
-    // Управление выбором групп (для удаления)
     const handleLongPress = (group) => {
         if (!selectMode) setSelectMode(true);
         if (!selectedGroups.includes(group.id)) {
@@ -146,11 +141,10 @@ const SocialView = () => {
         }
     };
 
-    // Удаление выбранных групп через контекст
     const handleDeleteSelected = () => {
         if (selectedGroups.length === 0) return;
 
-        deleteGroups(selectedGroups); // вызов из контекста
+        deleteGroups(selectedGroups); 
         setSelectedGroups([]);
         setSelectMode(false);
     };
@@ -246,7 +240,7 @@ const SocialView = () => {
                                                     if (isGroupValid(item)) {
                                                         saveGroupName(item.id);
                                                         setShowSavedMessage(true);
-                                                        setTimeout(() => setShowSavedMessage(false), 2000); // скрыть через 2 секунды
+                                                        setTimeout(() => setShowSavedMessage(false), 2000);
                                                     }
                                                 }}
                                                 className="ml-2"

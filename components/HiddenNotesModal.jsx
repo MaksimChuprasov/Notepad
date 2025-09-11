@@ -112,7 +112,6 @@ export default function HiddenNotesModal({
                     {...panResponder.panHandlers}
                     onStartShouldSetResponder={() => true}
                 >
-                    {/* Полоска сверху */}
                     <View className="w-12 h-1.5 bg-gray-400 rounded-full self-center mb-4" />
 
                     <Text className="text-xl font-bold mb-4 text-center">{t('Hidden notes')}</Text>

@@ -67,13 +67,12 @@ const NoteView = ({ navigation, route }) => {
     const addTask = () => {
         const newTask = { id: Date.now().toString(), text: '', checked: false };
         setTasks(prev => [...prev, newTask]);
-        setPendingFocusId(newTask.id);  // сохраняем id, чтобы потом сфокусировать
+        setPendingFocusId(newTask.id);
     };
 
     useEffect(() => {
         if (flatListRef.current && tasks.length > 0 && pendingFocusId) {
             flatListRef.current.scrollToEnd({ animated: true });
-            // Через setTimeout или requestAnimationFrame отложить установку фокуса
             requestAnimationFrame(() => {
                 setFocusedTaskId(pendingFocusId);
                 setPendingFocusId(null);
@@ -473,7 +472,6 @@ const NoteView = ({ navigation, route }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Выбранные группы */}
                     {selectedGroupIds.length > 0 && (
                         <View className="mt-2 px-4">
                             <Text className="text-gray-600 mb-1">{t('Shared with groups')}</Text>
@@ -577,8 +575,8 @@ const NoteView = ({ navigation, route }) => {
                             onDragEnd={({ data }) => {
                                 setTasks(prevTasks => {
                                     const isSameOrder = prevTasks.every((task, index) => task.id === data[index].id);
-                                    if (isSameOrder) return prevTasks; // порядок не изменился → не трогаем state
-                                    return data; // порядок изменился → обновляем
+                                    if (isSameOrder) return prevTasks;
+                                    return data; 
                                 });
                             }}
                             keyExtractor={item => item.id.toString()}

@@ -1,20 +1,19 @@
 import React, { useState, useContext, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image, SafeAreaView, TouchableWithoutFeedback } from 'react-native';
 import NoteContext from '../app/NoteContext';
 import { useFocusEffect } from '@react-navigation/native';
 import HiddenNotesModal from "../components/HiddenNotesModal"
-import Note from '../components/Note';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import SwipeableNote from '../components/SwipeableNote';
-import { PanGestureHandler, FlatList } from 'react-native-gesture-handler';
+import { FlatList } from 'react-native-gesture-handler';
 
 const HomeView = ({ navigation }) => {
     const [filteredNotes, setFilteredNotes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [selectMode, setSelectMode] = useState(false);
-    const { notes: contextNotes = [], notes, addNote, loadNotes, updateNote, deleteNotes, setNotes, hiddenNotes, setHiddenNotes, } = useContext(NoteContext);
+    const { notes: contextNotes = [], notes, loadNotes, updateNote, deleteNotes, setNotes } = useContext(NoteContext);
     const { t } = useTranslation();
     const scrollRef = useRef(null);
     const [showHidden, setShowHidden] = useState(false);
@@ -44,16 +43,15 @@ const HomeView = ({ navigation }) => {
     useEffect(() => {
         if (Array.isArray(contextNotes)) {
             const filtered = filterNotes(contextNotes, searchQuery);
-            // Сортируем от новых к старым по createdAt
             const sorted = filtered.slice().sort((a, b) => {
                 const dateA = new Date(a.createdAt || 0).getTime();
                 const dateB = new Date(b.createdAt || 0).getTime();
-                return dateB - dateA; // по убыванию
+                return dateB - dateA; 
             });
 
             setFilteredNotes(sorted);
         } else {
-            setFilteredNotes([]); // на всякий случай очистить
+            setFilteredNotes([]);
         }
     }, [searchQuery, contextNotes]);
 
@@ -115,14 +113,14 @@ const HomeView = ({ navigation }) => {
         }
     };
 
-    const formatDate = (dateString) => {
+    /*const formatDate = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
         if (isNaN(date)) return '';
 
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return date.toLocaleDateString(undefined, options);
-    };
+    };*/
 
 
 
@@ -130,7 +128,6 @@ const HomeView = ({ navigation }) => {
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
             <StatusBar style="dark" />
 
-            {/* Обертка для области, где нужно ловить нажатия вне выбора */}
             <TouchableWithoutFeedback onPress={handleOutsidePress}>
                 <View>
                     <View className="p-2 flex-row items-center">
@@ -149,7 +146,6 @@ const HomeView = ({ navigation }) => {
                 </View>
             </TouchableWithoutFeedback>
 
-            {/* Сам FlatList — отдельно, без TouchableWithoutFeedback */}
             <View className="flex-1 bg-[#F7F7F7] px-2">
                 <FlatList
                     ref={scrollRef}
@@ -207,10 +203,9 @@ const HomeView = ({ navigation }) => {
                                 : note
                         );
 
-                        // Отправляем на сервер, без обновления стейта
                         updatedNotes.forEach(note => {
                             if (normalizedIds.includes(String(note.id))) {
-                                updateNote(note, false); // false — не менять стейт здесь
+                                updateNote(note, false);
                             }
                         });
                         
