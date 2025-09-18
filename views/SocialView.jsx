@@ -52,43 +52,48 @@ const SocialView = () => {
 
     const handleAddGroup = () => {
         const newGroup = {
-            id: Date.now().toString(),
+            _id: Date.now().toString(),
             name: t('New Group'),
-            collaborators: [{ id: Date.now().toString(), name: '' }],
+            collaborators: [{ _id: Date.now().toString(), name: '' }],
             isDraft: true,
         };
         setGroups(prev => [...prev, newGroup]);
     };
 
-    const saveGroupName = (groupId) => {
-        const groupToSave = groups.find(g => g.id === groupId);
+    const saveGroupName = async (groupId) => {
+        const groupToSave = groups.find(g => g._id === groupId);
         if (!groupToSave || !groupToSave.name?.trim()) return;
 
         const groupData = {
-            id: groupToSave.id,
+            _id: groupToSave._id,
             name: groupToSave.name,
             collaborators: groupToSave.collaborators || [],
         };
 
         if (groupToSave.isDraft) {
-            addGroup(groupData);
+            const savedGroup = await addGroup(groupData); // <- дождаться ответа сервера
+            // заменить draft на настоящую группу
+            setGroups(prev =>
+                prev.map(g => (g._id === groupId ? { ...savedGroup, isDraft: false } : g))
+            );
         } else {
             updateGroup(groupData);
         }
     };
 
+
     const handleChangeGroupName = (text, groupId) => {
         const updatedGroups = groups.map(group =>
-            group.id === groupId ? { ...group, name: text } : group
+            group._id === groupId ? { ...group, name: text } : group
         );
         setGroups(updatedGroups);
     };
 
     const handleChangeCollaboratorName = (text, groupId, collabId) => {
         const updatedGroups = groups.map(group => {
-            if (group.id === groupId) {
+            if (group._id === groupId) {
                 const updatedCollaborators = (group.collaborators || []).map(collab =>
-                    collab.id === collabId ? { ...collab, name: text } : collab
+                    collab._id === collabId ? { ...collab, name: text } : collab
                 );
                 return { ...group, collaborators: updatedCollaborators };
             }
@@ -98,10 +103,10 @@ const SocialView = () => {
     };
 
     const addCollaborator = (groupId) => {
-        const newCollab = { id: Date.now().toString(), name: '' };
+        const newCollab = { _id: Date.now().toString(), name: '' };
 
         const updatedGroups = groups.map(group => {
-            if (group.id === groupId) {
+            if (group._id === groupId) {
                 const newCollaborators = [...(group.collaborators || []), newCollab];
 
                 return { ...group, collaborators: newCollaborators };
@@ -114,8 +119,8 @@ const SocialView = () => {
 
     const handleDeleteCollaborator = (groupId, collabId) => {
         const updatedGroups = groups.map(group => {
-            if (group.id === groupId) {
-                const filteredCollaborators = (group.collaborators || []).filter(c => c.id !== collabId);
+            if (group._id === groupId) {
+                const filteredCollaborators = (group.collaborators || []).filter(c => c._id !== collabId);
 
                 return { ...group, collaborators: filteredCollaborators };
             }
@@ -126,17 +131,17 @@ const SocialView = () => {
 
     const handleLongPress = (group) => {
         if (!selectMode) setSelectMode(true);
-        if (!selectedGroups.includes(group.id)) {
-            setSelectedGroups(prev => [...prev, group.id]);
+        if (!selectedGroups.includes(group._id)) {
+            setSelectedGroups(prev => [...prev, group._id]);
         }
     };
 
     const handlePress = (group) => {
         if (selectMode) {
-            if (selectedGroups.includes(group.id)) {
-                setSelectedGroups(prev => prev.filter(id => id !== group.id));
+            if (selectedGroups.includes(group._id)) {
+                setSelectedGroups(prev => prev.filter(id => id !== group._id));
             } else {
-                setSelectedGroups(prev => [...prev, group.id]);
+                setSelectedGroups(prev => [...prev, group._id]);
             }
         }
     };
@@ -144,7 +149,7 @@ const SocialView = () => {
     const handleDeleteSelected = () => {
         if (selectedGroups.length === 0) return;
 
-        deleteGroups(selectedGroups); 
+        deleteGroups(selectedGroups);
         setSelectedGroups([]);
         setSelectMode(false);
     };
@@ -190,7 +195,7 @@ const SocialView = () => {
 
                         <FlatList
                             data={filteredGroups}
-                            keyExtractor={(item) => item.id}
+                            keyExtractor={(item) => item._id}
                             contentContainerStyle={{ paddingHorizontal: 6, paddingVertical: 8 }}
                             renderItem={({ item }) => (
                                 <Pressable
@@ -199,7 +204,7 @@ const SocialView = () => {
                                     className="mb-2"
                                 >
                                     <View
-                                        className={`p-3 bg-white rounded-xl shadow-md border-2 border-transparent ${selectedGroups.includes(item.id) ? 'border-2 border-blue-500' : ''}`}
+                                        className={`p-3 bg-white rounded-xl shadow-md border-2 border-transparent ${selectedGroups.includes(item._id) ? 'border-2 border-blue-500' : ''}`}
                                     >
                                         <View className='flex flex-row items-center w-full justify-between'>
                                             <Pressable
@@ -207,17 +212,17 @@ const SocialView = () => {
                                                 onLongPress={() => handleLongPress(item)}
                                                 onPress={() => {
                                                     if (!selectMode) {
-                                                        setEditingGroupId(item.id);
+                                                        setEditingGroupId(item._id);
                                                     } else {
                                                         handlePress(item);
                                                     }
                                                 }}
                                             >
                                                 <View className={" bg-white rounded-xl shadow-md w-full min-h-[30px]"}>
-                                                    {editingGroupId === item.id ? (
+                                                    {editingGroupId === item._id ? (
                                                         <TextInput
                                                             value={item.name}
-                                                            onChangeText={(text) => handleChangeGroupName(text, item.id)}
+                                                            onChangeText={(text) => handleChangeGroupName(text, item._id)}
                                                             onBlur={() => setEditingGroupId(null)}
                                                             autoFocus
                                                             className="text-lg font-semibold p-0 mt-1"
@@ -238,7 +243,7 @@ const SocialView = () => {
                                             <TouchableOpacity
                                                 onPress={() => {
                                                     if (isGroupValid(item)) {
-                                                        saveGroupName(item.id);
+                                                        saveGroupName(item._id);
                                                         setShowSavedMessage(true);
                                                         setTimeout(() => setShowSavedMessage(false), 2000);
                                                     }
@@ -249,7 +254,7 @@ const SocialView = () => {
                                             >
                                                 <Image source={require('../images/saveBtn.png')} className="w-8 h-8" />
                                             </TouchableOpacity>
-                                            <TouchableOpacity onPress={() => addCollaborator(item.id)} className="ml-2">
+                                            <TouchableOpacity onPress={() => addCollaborator(item._id)} className="ml-2">
                                                 <Image
                                                     source={require('../images/collaborator.png')}
                                                     className="w-6 h-6"
@@ -258,16 +263,16 @@ const SocialView = () => {
                                         </View>
                                         <View>
                                             {(item.collaborators || []).map((collab) => (
-                                                <View key={collab.id} className='flex flex-row items-center justify-between'>
+                                                <View key={collab._id} className='flex flex-row items-center justify-between'>
                                                     <TextInput
                                                         value={collab.name}
                                                         onChangeText={(text) =>
-                                                            handleChangeCollaboratorName(text, item.id, collab.id)
+                                                            handleChangeCollaboratorName(text, item._id, collab._id)
                                                         }
                                                         placeholder="example@example.com"
                                                         className="border border-gray-300 rounded-md px-3 py-2 my-1 bg-white w-[87%]"
                                                     />
-                                                    <TouchableOpacity onPress={() => handleDeleteCollaborator(item.id, collab.id)} className="">
+                                                    <TouchableOpacity onPress={() => handleDeleteCollaborator(item._id, collab._id)} className="">
                                                         <Image
                                                             source={require('../images/bin.png')}
                                                             className="w-8 h-8"

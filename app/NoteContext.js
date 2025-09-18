@@ -203,7 +203,6 @@ export const NoteProvider = ({ children }) => {
     setToken(newToken);
   };
 
-
   //Synchronization notes function
   let isSyncing = false;
 
@@ -214,8 +213,8 @@ export const NoteProvider = ({ children }) => {
         console.log("🌐 Internet is available, synchronize notes");
 
         try {
-          await syncPendingNotes(); 
-          await syncDeletedNotes(); 
+          await syncPendingNotes();
+          await syncDeletedNotes();
         } catch (e) {
           console.warn("Synchronization error:", e);
         }
@@ -523,7 +522,7 @@ export const NoteProvider = ({ children }) => {
 
         // Сливаем заметки по id, сохраняем selectedGroupIds
         const mergedGroups = apiGroups.map((apiGroup) => {
-          const local = localGroups.find((n) => n.id === apiGroup.id);
+          const local = localGroups.find((n) => n._id === apiGroup._id);
           return {
             ...apiGroup,
             selectedGroupIds: local?.selectedGroupIds || [],
@@ -551,59 +550,56 @@ export const NoteProvider = ({ children }) => {
 
   // Add group function
   const addGroup = async (group) => {
-    if (!token) return;
+  if (!token) return;
 
-    try {
-      const response = await fetch(
-        "https://notepad-njs.faceqd.site/api/v2/groups",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            id: group.id,
-            name: group.name,
-            collaborators: group.collaborators,
-          }),
-        }
-      );
+  try {
+    const body = {
+      name: group.name,
+      collaborators: (group.collaborators || []).map(c => ({
+        _id: c._id || Date.now().toString(),
+        name: c.name
+      })),
+    };
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error("Error adding group");
-      }
+    const response = await fetch("https://notepad-njs.faceqd.site/api/v2/groups", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
 
-      const data = await response.json();
+    const text = await response.text();
+    if (!response.ok) throw new Error(text);
 
-      const updatedGroups = groups.map((g) =>
-        g.id === group.id
-          ? { ...data, collaborators: data.collaborators || [] }
-          : g
-      );
+    const data = JSON.parse(text);
 
-      setGroups(updatedGroups);
-      saveGroupsToStorage(updatedGroups);
-    } catch (error) {
-      console.error("Error adding group:", error);
-    }
-  };
+    return { ...data, collaborators: data.collaborators || [] };
+  } catch (error) {
+    console.error("Error adding group:", error);
+    throw error;
+  }
+};
 
-  // Update group function
+
+  // Update group
   const updateGroup = async (updatedGroup) => {
     if (!token) return;
 
     try {
       const response = await fetch(
-        `https://notepad-njs.faceqd.site/api/v2/groups/${updatedGroup.id}`,
+        `https://notepad-njs.faceqd.site/api/v2/groups/${updatedGroup._id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(updatedGroup),
+          body: JSON.stringify({
+            name: updatedGroup.name,
+            collaborators: updatedGroup.collaborators || [],
+          }),
         }
       );
 
@@ -613,8 +609,10 @@ export const NoteProvider = ({ children }) => {
         throw new Error("Error updating group on server");
       }
 
+      const data = await response.json();
+
       const newGroups = groups.map((group) =>
-        group.id === updatedGroup.id ? updatedGroup : group
+        group._id === data._id ? data : group
       );
 
       setGroups(newGroups);
@@ -641,7 +639,7 @@ export const NoteProvider = ({ children }) => {
       );
 
       const updatedGroups = groups.filter(
-        (group) => !idsToDelete.includes(group.id)
+        (group) => !idsToDelete.includes(group._id)
       );
 
       setGroups(updatedGroups);
