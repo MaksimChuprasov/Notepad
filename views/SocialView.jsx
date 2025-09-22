@@ -71,8 +71,7 @@ const SocialView = () => {
         };
 
         if (groupToSave.isDraft) {
-            const savedGroup = await addGroup(groupData); // <- дождаться ответа сервера
-            // заменить draft на настоящую группу
+            const savedGroup = await addGroup(groupData);
             setGroups(prev =>
                 prev.map(g => (g._id === groupId ? { ...savedGroup, isDraft: false } : g))
             );

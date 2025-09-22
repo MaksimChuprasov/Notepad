@@ -81,7 +81,7 @@ const Note = ({ note, isSelected, onPress, onLongPress }) => {
             <View className="flex-grow" />
 
             <View className="flex-row justify-end border-t border-gray-200 mt-1">
-                {/* Файл */}
+                
                 {/* {note?.files?.length > 0 && note.files[0].name ? (
                     <Text
                         className="text-xs text-gray-500 max-w-[140px]"
@@ -94,7 +94,6 @@ const Note = ({ note, isSelected, onPress, onLongPress }) => {
                     <View className="w-[140px]" />
                 )} */}
 
-                {/* Дата создания */}
                 <Text className="text-xs text-gray-400 py-2">
                     {formattedDate}
                 </Text>

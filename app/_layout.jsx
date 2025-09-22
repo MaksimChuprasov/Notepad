@@ -15,6 +15,13 @@ import {
   useNavigationContainerRef,
 } from "@react-navigation/native";
 
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://00f2d18e1c2e1b722328d8cf9f6f4e6c@o4510046247321600.ingest.de.sentry.io/4510046479450192',
+  tracesSampleRate: 1.0,
+});
+
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {

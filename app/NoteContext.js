@@ -56,7 +56,6 @@ export const NoteProvider = ({ children }) => {
           if (foundNote) {
             navigate("Note", { noteToEdit: foundNote });
           } else {
-            console.log("⏳ Заметка ещё не загружена, ждём...");
             setPendingNoteId(data.note_id);
           }
         } else {
@@ -91,7 +90,6 @@ export const NoteProvider = ({ children }) => {
   // Google login function
   const handleGoogleLogin = async () => {
     if (isSigningInRef.current) {
-      console.log("Google sign-in уже выполняется, ждите...");
       return;
     }
     isSigningInRef.current = true;
@@ -149,7 +147,7 @@ export const NoteProvider = ({ children }) => {
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
-        setToken(token); // <--- обязательно
+        setToken(token);
         setIsLoggedIn(true);
 
         const userInfo = await AsyncStorage.getItem("userInfo");
@@ -159,13 +157,13 @@ export const NoteProvider = ({ children }) => {
           setEmail(user.email);
         }
 
-        return token; // <--- возвращаем сам токен
+        return token;
       } else {
-        console.warn("❗ Токен не найден");
+        console.warn("❗ Token not found");
         return null;
       }
     } catch (e) {
-      console.error("Ошибка при получении токена:", e);
+      console.error("Error getting token: ", e);
       return null;
     }
   };
@@ -194,7 +192,7 @@ export const NoteProvider = ({ children }) => {
         );
       }
     } catch (error) {
-      console.error("Ошибка при сохранении токена:", error);
+      console.error("Error saving token:", error);
     }
   };
 
@@ -263,14 +261,13 @@ export const NoteProvider = ({ children }) => {
   // Load notes
   // -------------------
   const loadNotes = async () => {
-    // 1. Показываем локальные сразу
     const localNotes = await loadNotesFromStorage();
     setNotes(localNotes);
 
-    const ensuredToken = await checkToken(); // ждём token
+    const ensuredToken = await checkToken();
     if (!ensuredToken) {
       console.error(
-        "❗ Не удалось получить токен, оставляем только локальные заметки"
+        "❗ Unable to obtain token, leaving local notes only"
       );
       return;
     }
@@ -285,7 +282,7 @@ export const NoteProvider = ({ children }) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Ошибка API /notes:", response.status, errorText);
+        console.error("Error API /notes:", response.status, errorText);
         throw new Error("Error loading notes");
       }
 
@@ -304,7 +301,7 @@ export const NoteProvider = ({ children }) => {
       saveNotesToStorage(notesWithDates);
     } catch (error) {
       console.warn(
-        "Ошибка загрузки заметок с сервера, показываем локальные:",
+        "Error loading notes from the server, showing local ones:",
         error.message
       );
     }
@@ -314,44 +311,47 @@ export const NoteProvider = ({ children }) => {
   // Add note
   // -------------------
   const addNote = async (note) => {
-    if (!token) return;
+  if (!token) return;
 
-    try {
-      const response = await fetch(
-        "https://notepad-njs.faceqd.site/api/v2/notes",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(note),
-        }
-      );
+  try {
+    const response = await fetch(
+      "https://notepad-njs.faceqd.site/api/v2/notes",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(note),
+      }
+    );
 
-      if (!response.ok) throw new Error("Error adding note to server");
+    if (!response.ok) throw new Error("Error adding note to server");
 
-      const serverNote = await response.json();
-      const newNote = { ...note, id: serverNote.id };
+    const serverNote = await response.json();
 
-      const newNotes = [newNote, ...notes];
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
-    } catch (error) {
-      console.warn("Ошибка при добавлении заметки, сохраняем локально:", error);
+    // сохраняем то, что вернул сервер
+    const newNotes = [serverNote, ...notes];
+    setNotes(newNotes);
+    saveNotesToStorage(newNotes);
 
-      const fallbackNote = {
-        ...note,
-        id: Date.now().toString(),
-        unsynced: true,
-      };
-      const newNotes = [fallbackNote, ...notes];
-      setNotes(newNotes);
-      saveNotesToStorage(newNotes);
+  } catch (error) {
+    console.warn("Error adding note, saving locally:", error);
 
-      await addPendingAction({ type: "add", note: fallbackNote });
-    }
-  };
+    const fallbackNote = {
+      ...note,
+      id: Date.now().toString(),
+      unsynced: true,
+    };
+
+    const newNotes = [fallbackNote, ...notes];
+    setNotes(newNotes);
+    saveNotesToStorage(newNotes);
+
+    await addPendingAction({ type: "add", note: fallbackNote });
+  }
+};
+
 
   // -------------------
   // Update note
@@ -382,7 +382,7 @@ export const NoteProvider = ({ children }) => {
         saveNotesToStorage(newNotes);
       }
     } catch (error) {
-      console.warn("Ошибка при обновлении заметки, обновляем локально:", error);
+      console.warn("Error updating note, updating locally:", error);
 
       if (updateState) {
         const newNotes = notes.map((note) =>
@@ -417,7 +417,7 @@ export const NoteProvider = ({ children }) => {
       );
     } catch (error) {
       console.warn(
-        "Удаление с сервера не удалось, будет повторено позже:",
+        "Deletion from server failed, will try again later:",
         error
       );
 
@@ -449,9 +449,9 @@ export const NoteProvider = ({ children }) => {
       );
 
       await AsyncStorage.removeItem("deletedNoteIds");
-      console.log("Удалённые заметки успешно синхронизированы с сервером.");
+      console.log("Deleted notes have been successfully synchronized with the server.");
     } catch (error) {
-      console.warn("Синхронизация удалённых заметок не удалась:", error);
+      console.warn("Syncing deleted notes failed: ", error);
     }
   };
 
@@ -469,7 +469,7 @@ export const NoteProvider = ({ children }) => {
         if (action.type === "add") await addNote(action.note);
         else if (action.type === "update") await updateNote(action.note, false);
       } catch (e) {
-        console.warn("Ошибка синхронизации:", e);
+        console.warn("Synchronization error: ", e);
       }
     }
 
@@ -482,7 +482,7 @@ export const NoteProvider = ({ children }) => {
       const json = JSON.stringify(data);
       await AsyncStorage.setItem(STORAGE_KEY, json);
     } catch (e) {
-      console.error("Ошибка при сохранении групп в хранилище:", e);
+      console.error("Error saving groups to storage:", e);
     }
   };
 
@@ -492,7 +492,7 @@ export const NoteProvider = ({ children }) => {
       const json = await AsyncStorage.getItem(STORAGE_KEY);
       return json != null ? JSON.parse(json) : [];
     } catch (e) {
-      console.error("Ошибка при загрузке групп из хранилища:", e);
+      console.error("Error loading groups from storage:", e);
       return [];
     }
   };
@@ -516,11 +516,9 @@ export const NoteProvider = ({ children }) => {
 
         const apiGroups = await response.json();
 
-        // Загружаем локальные заметки
         const storedJson = await AsyncStorage.getItem("notes");
         const localGroups = storedJson ? JSON.parse(storedJson) : [];
 
-        // Сливаем заметки по id, сохраняем selectedGroupIds
         const mergedGroups = apiGroups.map((apiGroup) => {
           const local = localGroups.find((n) => n._id === apiGroup._id);
           return {

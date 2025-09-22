@@ -46,7 +46,7 @@ const HomeView = ({ navigation }) => {
             const sorted = filtered.slice().sort((a, b) => {
                 const dateA = new Date(a.createdAt || 0).getTime();
                 const dateB = new Date(b.createdAt || 0).getTime();
-                return dateB - dateA; 
+                return dateB - dateA;
             });
 
             setFilteredNotes(sorted);
@@ -113,17 +113,6 @@ const HomeView = ({ navigation }) => {
         }
     };
 
-    /*const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        if (isNaN(date)) return '';
-
-        const options = { year: 'numeric', month: 'short', day: 'numeric' };
-        return date.toLocaleDateString(undefined, options);
-    };*/
-
-
-
     return (
         <SafeAreaView className="flex-1 pt-9 bg-[#F7F7F7]">
             <StatusBar style="dark" />
@@ -152,7 +141,7 @@ const HomeView = ({ navigation }) => {
                     data={filteredNotes.filter(note => !note.hidden)}
                     extraData={selectedNotes}
                     numColumns={2}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item, index) => String(item?.id ?? index)}
                     columnWrapperStyle={{
                         gap: 6,
                         paddingHorizontal: 4,
@@ -208,13 +197,12 @@ const HomeView = ({ navigation }) => {
                                 updateNote(note, false);
                             }
                         });
-                        
+
                         return updatedNotes;
                     });
                 }}
 
             />
-
 
             <TouchableOpacity
                 onPress={refreshPage}

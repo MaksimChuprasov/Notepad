@@ -715,7 +715,6 @@ const NoteView = ({ navigation, route }) => {
                     <View className="bg-[#F7F7F7] py-2 px-6 absolute bottom-0 left-0 w-full">
 
                         <View className="flex-row">
-                            {/* Первая кнопка */}
                             {/* <View className="items-center w-12">
                                 {editingFileIndex !== -1 && (
                                     <TouchableOpacity
@@ -744,7 +743,6 @@ const NoteView = ({ navigation, route }) => {
 
                             </View> */}
 
-                            {/* Вторая кнопка */}
                             <TouchableOpacity
                                 className="items-center mr-8"
                                 onPress={addTask}
@@ -764,7 +762,6 @@ const NoteView = ({ navigation, route }) => {
                             >
                                 <TouchableWithoutFeedback onPress={toggleModal}>
                                     <View className="flex-1">
-                                         модальное окно 
                                         <View
                                             className="absolute bottom-[75px] left-6 rounded-xl px-2 w-1/2 bg-gray-200 items-left shadow-lg"
                                         >
@@ -823,7 +820,6 @@ const NoteView = ({ navigation, route }) => {
                             </Modal> */}
 
 
-                            {/* Третья кнопка */}
                             {/* <TouchableOpacity
                                 className="bg-white items-center"
                             >
@@ -834,7 +830,6 @@ const NoteView = ({ navigation, route }) => {
                                 <Text className="text-[12px]">Formate text</Text>
                             </TouchableOpacity> */}
 
-                            {/* Четвертая кнопка*/}
                             <TouchableOpacity
                                 onPress={toggleCollabModal}
                                 className="items-center"
@@ -853,7 +848,6 @@ const NoteView = ({ navigation, route }) => {
                             >
                                 <TouchableWithoutFeedback onPress={toggleCollabModal}>
                                     <View className="flex-1">
-                                        {/* модальное окно */}
                                         <View
                                             className="absolute bottom-[75px] right-2 left-2 rounded-xl px-2 bg-gray-200 items-left shadow-lg max-h-40"
                                         >
