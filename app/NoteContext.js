@@ -81,8 +81,7 @@ export const NoteProvider = ({ children }) => {
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId:
-        "890755548909-dmr6ej2o4t02i1998bv4gj1i8it2qt21.apps.googleusercontent.com",
+      webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
       offlineAccess: true,
     });
   }, []);
@@ -99,8 +98,9 @@ export const NoteProvider = ({ children }) => {
       const userInfo = await GoogleSignin.signIn();
       const id_token = userInfo.idToken || userInfo.data?.idToken;
 
+      process.env.API_URL
       const response = await fetch(
-        "https://notepad-njs.faceqd.site/api/v2/google-token",
+        `${process.env.API_URL}/google-token`,
         {
           method: "POST",
           headers: {
@@ -180,7 +180,7 @@ export const NoteProvider = ({ children }) => {
         const expoResponse = await Notifications.getExpoPushTokenAsync();
 
         const response = await fetch(
-          "https://notepad-njs.faceqd.site/api/v2/save-token",
+          `${process.env.API_URL}/save-token`,
           {
             method: "POST",
             headers: {
@@ -266,15 +266,13 @@ export const NoteProvider = ({ children }) => {
 
     const ensuredToken = await checkToken();
     if (!ensuredToken) {
-      console.error(
-        "❗ Unable to obtain token, leaving local notes only"
-      );
+      console.error("❗ Unable to obtain token, leaving local notes only");
       return;
     }
 
     try {
       const response = await fetch(
-        "https://notepad-njs.faceqd.site/api/v2/notes",
+        `${process.env.API_URL}/notes`,
         {
           headers: { Authorization: `Bearer ${ensuredToken}` },
         }
@@ -311,47 +309,45 @@ export const NoteProvider = ({ children }) => {
   // Add note
   // -------------------
   const addNote = async (note) => {
-  if (!token) return;
+    if (!token) return;
 
-  try {
-    const response = await fetch(
-      "https://notepad-njs.faceqd.site/api/v2/notes",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(note),
-      }
-    );
+    try {
+      const response = await fetch(
+        `${process.env.API_URL}/notes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(note),
+        }
+      );
 
-    if (!response.ok) throw new Error("Error adding note to server");
+      if (!response.ok) throw new Error("Error adding note to server");
 
-    const serverNote = await response.json();
+      const serverNote = await response.json();
 
-    // сохраняем то, что вернул сервер
-    const newNotes = [serverNote, ...notes];
-    setNotes(newNotes);
-    saveNotesToStorage(newNotes);
+      // сохраняем то, что вернул сервер
+      const newNotes = [serverNote, ...notes];
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
+    } catch (error) {
+      console.warn("Error adding note, saving locally:", error);
 
-  } catch (error) {
-    console.warn("Error adding note, saving locally:", error);
+      const fallbackNote = {
+        ...note,
+        id: Date.now().toString(),
+        unsynced: true,
+      };
 
-    const fallbackNote = {
-      ...note,
-      id: Date.now().toString(),
-      unsynced: true,
-    };
+      const newNotes = [fallbackNote, ...notes];
+      setNotes(newNotes);
+      saveNotesToStorage(newNotes);
 
-    const newNotes = [fallbackNote, ...notes];
-    setNotes(newNotes);
-    saveNotesToStorage(newNotes);
-
-    await addPendingAction({ type: "add", note: fallbackNote });
-  }
-};
-
+      await addPendingAction({ type: "add", note: fallbackNote });
+    }
+  };
 
   // -------------------
   // Update note
@@ -361,7 +357,7 @@ export const NoteProvider = ({ children }) => {
 
     try {
       const response = await fetch(
-        `https://notepad-njs.faceqd.site/api/v2/notes/${updatedNote.id}`,
+        `${process.env.API_URL}/notes/${updatedNote.id}`,
         {
           method: "PUT",
           headers: {
@@ -409,17 +405,14 @@ export const NoteProvider = ({ children }) => {
     try {
       await Promise.all(
         idsToDelete.map((id) =>
-          fetch(`https://notepad-njs.faceqd.site/api/v2/notes/${id}`, {
+          fetch(`${process.env.API_URL}/notes/${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
           })
         )
       );
     } catch (error) {
-      console.warn(
-        "Deletion from server failed, will try again later:",
-        error
-      );
+      console.warn("Deletion from server failed, will try again later:", error);
 
       const existing = await AsyncStorage.getItem("deletedNoteIds");
       const existingIds = existing ? JSON.parse(existing) : [];
@@ -441,7 +434,7 @@ export const NoteProvider = ({ children }) => {
 
       await Promise.all(
         idsToDelete.map((id) =>
-          fetch(`https://notepad-njs.faceqd.site/api/v2/notes/${id}`, {
+          fetch(`${process.env.API_URL}/notes/${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
           })
@@ -449,7 +442,9 @@ export const NoteProvider = ({ children }) => {
       );
 
       await AsyncStorage.removeItem("deletedNoteIds");
-      console.log("Deleted notes have been successfully synchronized with the server.");
+      console.log(
+        "Deleted notes have been successfully synchronized with the server."
+      );
     } catch (error) {
       console.warn("Syncing deleted notes failed: ", error);
     }
@@ -504,7 +499,7 @@ export const NoteProvider = ({ children }) => {
     const loadGroups = async () => {
       try {
         const response = await fetch(
-          "https://notepad-njs.faceqd.site/api/v2/groups",
+          `${process.env.API_URL}/groups`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -548,38 +543,40 @@ export const NoteProvider = ({ children }) => {
 
   // Add group function
   const addGroup = async (group) => {
-  if (!token) return;
+    if (!token) return;
 
-  try {
-    const body = {
-      name: group.name,
-      collaborators: (group.collaborators || []).map(c => ({
-        _id: c._id || Date.now().toString(),
-        name: c.name
-      })),
-    };
+    try {
+      const body = {
+        name: group.name,
+        collaborators: (group.collaborators || []).map((c) => ({
+          _id: c._id || Date.now().toString(),
+          name: c.name,
+        })),
+      };
 
-    const response = await fetch("https://notepad-njs.faceqd.site/api/v2/groups", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
+      const response = await fetch(
+        `${process.env.API_URL}/groups`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
 
-    const text = await response.text();
-    if (!response.ok) throw new Error(text);
+      const text = await response.text();
+      if (!response.ok) throw new Error(text);
 
-    const data = JSON.parse(text);
+      const data = JSON.parse(text);
 
-    return { ...data, collaborators: data.collaborators || [] };
-  } catch (error) {
-    console.error("Error adding group:", error);
-    throw error;
-  }
-};
-
+      return { ...data, collaborators: data.collaborators || [] };
+    } catch (error) {
+      console.error("Error adding group:", error);
+      throw error;
+    }
+  };
 
   // Update group
   const updateGroup = async (updatedGroup) => {
@@ -587,7 +584,7 @@ export const NoteProvider = ({ children }) => {
 
     try {
       const response = await fetch(
-        `https://notepad-njs.faceqd.site/api/v2/groups/${updatedGroup._id}`,
+        `${process.env.API_URL}/groups/${updatedGroup._id}`,
         {
           method: "PUT",
           headers: {
@@ -627,7 +624,7 @@ export const NoteProvider = ({ children }) => {
     try {
       await Promise.all(
         idsToDelete.map((id) =>
-          fetch(`https://notepad-njs.faceqd.site/api/v2/groups/${id}`, {
+          fetch(`${process.env.API_URL}/groups/${id}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${token}`,
