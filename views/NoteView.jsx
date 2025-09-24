@@ -476,9 +476,9 @@ const NoteView = ({ navigation, route }) => {
                         <View className="mt-2 px-4">
                             <Text className="text-gray-600 mb-1">{t('Shared with groups')}</Text>
                             {groups
-                                .filter(group => selectedGroupIds.includes(group.id))
+                                .filter(group => selectedGroupIds.includes(group._id))
                                 .map(group => (
-                                    <View key={group.id} className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 border border-gray-200 shadow-sm">
+                                    <View key={group._id} className="flex-row items-center bg-white rounded-xl px-3 py-2 mb-2 border border-gray-200 shadow-sm">
                                         <Image
                                             source={require('../images/group-check.png')}
                                             className="w-4 h-4 mr-2"
@@ -865,9 +865,9 @@ const NoteView = ({ navigation, route }) => {
 
                                                     return (
                                                         <TouchableOpacity
-                                                            key={group.id}
+                                                             key={group._id}
                                                             className={`py-2 ${!isLast ? 'border-b border-gray-300' : ''}`}
-                                                            onPress={() => handleGroupSelect(group.id)}
+                                                            onPress={() => handleGroupSelect(group._id)}
                                                         >
                                                             <View className="flex-row">
                                                                 <Image
